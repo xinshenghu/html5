@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>屏幕录像机</title>
+    <meta charset="UTF-8" />
+    <style>
+      body {
+        background: url("https://labfile.oss.aliyuncs.com/courses/8605/bg-031502.png");
+        display: flex;
+        font-family: sans-serif;
+        justify-content: center;
+        align-items: center;
+        background-size: 100% 100%;
+        width: 98vw;
+        height: 98vh;
+      }
+      button {
+        background-color: #3ba9f4;
+        color: #fff;
+        font-size: 20px;
+        border-radius: 2px;
+        height: 50px;
+        width: 100px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <video class="video" width="600px" controls></video>
+    <button class="record-btn">录制</button>
+
+    <script>
+      let btn = document.querySelector(".record-btn");
+
+      btn.addEventListener("click", async function () {
+        let stream = await navigator.mediaDevices.getDisplayMedia({
+          video: true,
+        });
+
+        const mime = MediaRecorder.isTypeSupported("video/webm; codecs=vp9")
+          ? "video/webm; codecs=vp9"
+          : "video/webm";
+        let mediaRecorder = new MediaRecorder(stream, {
+          mimeType: mime,
+        });
+
+        let chunks = [];
+        mediaRecorder.addEventListener("dataavailable", function (e) {
+          chunks.push(e.data);
+        });
+
+        mediaRecorder.addEventListener("stop", function () {
+          let blob = new Blob(chunks, {
+            type: chunks[0].type,
+          });
+          let url = URL.createObjectURL(blob);
+
+          let video = document.querySelector("video");
+          video.src = url;
+
+          let a = document.createElement("a");
+          a.href = url;
+          a.download = "video.webm";
+          a.click();
+        });
+
+        //启动录音机
+        mediaRecorder.start();
+      });
+    </script>
+  </body>
+</html>
