@@ -52,4 +52,4 @@ document
     }
   });
 
-weather.fetchWeather("Shanghai");
+weather.fetchWeather("beijing");
