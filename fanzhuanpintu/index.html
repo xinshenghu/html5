@@ -1,0 +1,103 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>蓝色拼图</title>
+    <!-- 引入Bootstrap css -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css" />
+    <!-- 引入自定义 css -->
+    <link rel="stylesheet" href="css/style.css" />
+
+    <!-- 引入jQuery和Bootstrap js -->
+    <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/js/bootstrap.min.js"></script>
+    <!-- 引入游戏主程序js -->
+    <script src="js/game.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <div class="heading">
+            <h1 class="title">jQuery 翻转拼图游戏</h1>
+            <div class="scoresContainer">
+                <!-- 现实当前游戏级别 -->
+                <div class="currLevel">当前级别：<b>1</b></div>
+            </div>
+        </div>
+        <div class="aboveGame">
+            <!-- 游戏按钮 -->
+            <a class="instruct btn btn-primary" data-toggle="modal" data-target="#instructions">玩法说明</a>
+            <a class="newgame btn btn-primary" data-toggle="modal" data-target="#newGame">重新开始</a>
+            <a class="reset btn btn-primary" data-toggle="modal" data-target="#restartLevel">重置级别</a>
+        </div>
+        <div class="board">
+            <!-- 游戏区域 -->
+            <div class="gamerow">
+                <div class="gamesquare coord0q0"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 游戏玩法 modal -->
+    <div class="modal fade" id="instructions" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">游戏玩法</h4>
+                </div>
+                <div class="modal-body">
+                    <p>如何才算赢：使拼板全部变成蓝色。</p>
+                    <p>
+                        玩法：每个方块一面橙色，一面蓝色。点击一个方块，这个方块的颜色会翻转，并且，与它邻接的方块的颜色也会翻转。
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-dismiss="modal">
+                        开始游戏
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新游戏 modal -->
+    <div class="modal fade" id="newGame" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">重新开始</h4>
+                </div>
+                <div class="modal-body">
+                    <p>你真的想重新开始吗？</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="newGameConfirm" data-dismiss="modal">
+                        开始游戏
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 重新开始本级别游戏 modal -->
+    <div class="modal fade" id="restartLevel" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">重新开始本级别游戏</h4>
+                </div>
+                <div class="modal-body">
+                    <p>你真的想重新开始吗？</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="resetLevelConfirm" data-dismiss="modal">
+                        重置
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
