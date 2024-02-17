@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>个人信息展示</title>
+    <style>
+        /* 在这里添加一些基本的CSS样式来美化页面 */
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            width: 80%;
+            margin: auto;
+            overflow: hidden;
+        }
+        header {
+            background: #333;
+            color: #fff;
+            padding-top: 30px;
+            min-height: 70px;
+            border-bottom: #6ab47b 3px solid;
+        }
+        header a {
+            color: #fff;
+            text-decoration: none;
+            text-transform: uppercase;
+            font-size: 16px;
+        }
+        header ul {
+            padding: 0;
+            list-style: none;
+        }
+        header li {
+            display: inline;
+            margin-left: 20px;
+        }
+        header #branding {
+            float: left;
+        }
+        header #branding h1 {
+            margin: 0;
+        }
+        header nav {
+            float: right;
+            margin-top: 10px;
+        }
+        header .highlight, header .current a {
+            color: #e8491d;
+            font-weight: bold;
+        }
+        header a:hover {
+            color: #ffffff;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div id="branding">
+                <h1>个人信息</h1>
+            </div>
+            <nav>
+                <ul>
+                    <li class="current"><a href="index.html">首页</a></li>
+                    <li><a href="#">关于我</a></li>
+                    <li><a href="#">作品集</a></li>
+                    <li><a href="#">联系方式</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <section id="showcase">
+        <div class="container">
+            <h1>欢迎来到我的个人信息展示网站</h1>
+            <p>在这里，你可以了解我的背景、技能和作品。</p>
+        </div>
+    </section>
+
+    <section id="about">
+        <div class="container">
+            <h2>关于我</h2>
+            <p>我是谁，我有什么兴趣爱好，等等。</p>
+            <img src="1.jpg" alt="个人信息的照片">
+        </div>
+    </section>
+
+    <section id="portfolio">
+        <div class="container">
+            <h2>作品集</h2>
+            <p>这里可以展示你的项目或作品。</p>
+            <!-- 这里可以添加项目的列表或缩略图 -->
+        </div>
+    </section>
+
+    <section id="contact">
+        <div class="container">
+            <h2>联系方式</h2>
+            <p>你可以通过以下方式联系我：</p>
+            <!-- 这里可以添加联系方式，如邮箱、电话等 -->
+        </div>
+    </section>
+
+    <footer>
+        <p>版权所有 &copy; 2023 个人信息展示网站</p>
+    </footer>
+</body>
+</html>
