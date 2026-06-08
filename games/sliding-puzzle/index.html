@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>滑块拼图</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: Arial, sans-serif; 
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); 
+            min-height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center;
+            padding: 20px;
+            color: white;
+        }
+        h1 { color: #e94560; margin-bottom: 10px; font-size: 28px; }
+        .info { color: #aaa; margin-bottom: 20px; }
+        .game-container {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .puzzle-board {
+            display: grid;
+            gap: 4px;
+            background: #333;
+            padding: 4px;
+            border-radius: 10px;
+        }
+        .tile {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            user-select: none;
+        }
+        .tile:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+        }
+        .tile.empty {
+            background: transparent;
+            box-shadow: none;
+            cursor: default;
+        }
+        .tile.empty:hover {
+            transform: none;
+        }
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 14px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: bold;
+        }
+        button:hover { transform: translateY(-2px); }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-success { background: #4caf50; color: white; }
+        .btn-warning { background: #ff9800; color: white; }
+        .stats {
+            margin-top: 15px;
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            color: #ccc;
+        }
+        .stat { text-align: center; }
+        .stat-value { font-size: 24px; color: #e94560; font-weight: bold; }
+        .stat-label { font-size: 12px; color: #888; }
+        .win-message {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        .win-message h2 { font-size: 48px; color: #4caf50; margin-bottom: 20px; }
+        .win-message p { font-size: 18px; color: #fff; margin-bottom: 30px; }
+        .difficulty-select {
+            margin-bottom: 15px;
+        }
+        .difficulty-select label { margin-right: 10px; color: #aaa; }
+        .difficulty-select select {
+            padding: 8px 15px;
+            border-radius: 5px;
+            border: none;
+            background: #444;
+            color: white;
+            font-size: 14px;
+        }
+        @media (max-width: 500px) {
+            .tile { width: 60px; height: 60px; font-size: 22px; }
+        }
+    </style>
+</head>
+<body>
+    <h1>🧩 滑块拼图</h1>
+    <p class="info">移动方块使数字按顺序排列</p>
+    
+    <div class="game-container">
+        <div class="difficulty-select">
+            <label>难度：</label>
+            <select id="difficulty">
+                <option value="3">3×3 简单</option>
+                <option value="4">4×4 中等</option>
+                <option value="5">5×5 困难</option>
+            </select>
+        </div>
+        
+        <div class="puzzle-board" id="board"></div>
+        
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-value" id="moves">0</div>
+                <div class="stat-label">移动次数</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="time">0:00</div>
+                <div class="stat-label">用时</div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn-primary" onclick="newGame()">新游戏</button>
+            <button class="btn-warning" onclick="showHint()">提示</button>
+        </div>
+    </div>
+    
+    <div class="win-message" id="winMessage" style="display:none;">
+        <h2>🎉 恭喜通关!</h2>
+        <p id="winStats"></p>
+        <button class="btn-success" onclick="newGame()">再来一局</button>
+    </div>
+
+    <script>
+        let size = 3;
+        let tiles = [];
+        let moves = 0;
+        let seconds = 0;
+        let timer = null;
+        let gameStarted = false;
+        let emptyIndex = 0;
+
+        const board = document.getElementById('board');
+        const movesDisplay = document.getElementById('moves');
+        const timeDisplay = document.getElementById('time');
+        const winMessage = document.getElementById('winMessage');
+        const winStats = document.getElementById('winStats');
+        const difficultySelect = document.getElementById('difficulty');
+
+        difficultySelect.addEventListener('change', () => {
+            size = parseInt(difficultySelect.value);
+            newGame();
+        });
+
+        function initGame() {
+            tiles = [];
+            for (let i = 0; i < size * size; i++) {
+                tiles.push(i);
+            }
+            // 打乱顺序
+            do {
+                for (let i = tiles.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [tiles[i], tiles[j]] = [tiles[j], tiles[i]];
+                }
+            } while (!isSolvable() || isWin());
+            
+            emptyIndex = tiles.indexOf(0);
+            moves = 0;
+            seconds = 0;
+            gameStarted = false;
+            clearInterval(timer);
+            timer = null;
+            movesDisplay.textContent = '0';
+            timeDisplay.textContent = '0:00';
+            winMessage.style.display = 'none';
+            render();
+        }
+
+        function isSolvable() {
+            let inversions = 0;
+            const flatTiles = tiles.filter(t => t !== 0);
+            for (let i = 0; i < flatTiles.length; i++) {
+                for (let j = i + 1; j < flatTiles.length; j++) {
+                    if (flatTiles[i] > flatTiles[j]) inversions++;
+                }
+            }
+            if (size % 2 === 1) {
+                return inversions % 2 === 0;
+            } else {
+                const emptyRow = Math.floor(emptyIndex / size);
+                return (inversions + emptyRow) % 2 === 1;
+            }
+        }
+
+        function render() {
+            board.innerHTML = '';
+            board.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+            
+            const tileSize = Math.min(80, Math.floor((window.innerWidth - 80) / size));
+            
+            tiles.forEach((num, index) => {
+                const tile = document.createElement('div');
+                tile.className = 'tile' + (num === 0 ? ' empty' : '');
+                tile.textContent = num === 0 ? '' : num;
+                tile.style.width = tileSize + 'px';
+                tile.style.height = tileSize + 'px';
+                tile.style.fontSize = (tileSize * 0.35) + 'px';
+                
+                if (num !== 0) {
+                    tile.addEventListener('click', () => move(index));
+                }
+                
+                board.appendChild(tile);
+            });
+        }
+
+        function move(index) {
+            if (tiles[index] === 0) return;
+            
+            const row = Math.floor(index / size);
+            const col = index % size;
+            const emptyRow = Math.floor(emptyIndex / size);
+            const emptyCol = emptyIndex % size;
+            
+            // 检查是否可以移动（上下左右相邻）
+            const canMove = (
+                (row === emptyRow && Math.abs(col - emptyCol) === 1) ||
+                (col === emptyCol && Math.abs(row - emptyRow) === 1)
+            );
+            
+            if (!canMove) return;
+            
+            // 开始计时
+            if (!gameStarted) {
+                gameStarted = true;
+                timer = setInterval(() => {
+                    seconds++;
+                    timeDisplay.textContent = Math.floor(seconds / 60) + ':' + (seconds % 60).toString().padStart(2, '0');
+                }, 1000);
+            }
+            
+            // 交换
+            [tiles[index], tiles[emptyIndex]] = [tiles[emptyIndex], tiles[index]];
+            emptyIndex = index;
+            
+            moves++;
+            movesDisplay.textContent = moves;
+            
+            render();
+            
+            if (isWin()) {
+                clearInterval(timer);
+                winStats.textContent = `用了 ${moves} 步，耗时 ${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, '0')}`;
+                winMessage.style.display = 'flex';
+            }
+        }
+
+        function isWin() {
+            for (let i = 0; i < tiles.length - 1; i++) {
+                if (tiles[i] !== i + 1) return false;
+            }
+            return tiles[tiles.length - 1] === 0;
+        }
+
+        function showHint() {
+            const correct = tiles.map((t, i) => t === i + 1 || (i === tiles.length - 1 && t === 0));
+            const wrongIndex = correct.indexOf(false);
+            if (wrongIndex === -1) {
+                alert('已经全部正确了！');
+            } else {
+                alert(`第一个错误位置提示：数字 ${tiles[wrongIndex]} 应该放在第 ${tiles[wrongIndex]} 位`);
+            }
+        }
+
+        function newGame() {
+            initGame();
+        }
+
+        // 初始化
+        initGame();
+        
+        // 响应式
+        window.addEventListener('resize', render);
+    </script>
+</body>
+</html>
