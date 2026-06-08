@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>小游戏合集</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); min-height: 100vh; color: white; }
+        .container { max-width: 800px; margin: 0 auto; padding: 30px; }
+        h1 { text-align: center; margin-bottom: 30px; font-size: 28px; color: #e94560; }
+        .info { background: rgba(255,255,255,0.1); border-radius: 15px; padding: 25px; margin-bottom: 30px; }
+        .info h2 { color: #00bcd4; margin-bottom: 15px; font-size: 20px; }
+        .info p { line-height: 1.8; margin-bottom: 10px; color: #ccc; }
+        .game-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; }
+        .game-item { background: rgba(255,255,255,0.08); border-radius: 12px; padding: 15px; text-align: center; transition: transform 0.2s; }
+        .game-item:hover { transform: translateY(-5px); background: rgba(255,255,255,0.12); }
+        .game-item .icon { font-size: 36px; margin-bottom: 10px; }
+        .game-item .name { font-size: 14px; color: #ddd; }
+        .game-item .level { font-size: 12px; color: #666; margin-top: 5px; }
+        .screenshots { margin-top: 30px; }
+        .screenshots h2 { color: #4caf50; margin-bottom: 20px; font-size: 20px; }
+        .screenshot-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        .screenshot-item { border-radius: 10px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .screenshot-item img { width: 100%; height: auto; display: block; }
+        .note { background: rgba(255,152,0,0.2); border-left: 4px solid #ff9800; padding: 15px; margin-top: 30px; border-radius: 0 10px 10px 0; }
+        .note p { color: #ffd54f; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 小游戏合集</h1>
+        
+        <div class="info">
+            <h2>📱 关于这个项目</h2>
+            <p>这是一个微信小程序项目，包含6个经典小游戏：</p>
+        </div>
+
+        <div class="game-list">
+            <div class="game-item">
+                <div class="icon">🧩</div>
+                <div class="name">拼图</div>
+                <div class="level">第1关</div>
+            </div>
+            <div class="game-item">
+                <div class="icon">🐍</div>
+                <div class="name">贪吃蛇</div>
+                <div class="level">第2关</div>
+            </div>
+            <div class="game-item">
+                <div class="icon">💣</div>
+                <div class="name">扫雷</div>
+                <div class="level">第3关</div>
+            </div>
+            <div class="game-item">
+                <div class="icon">🔮</div>
+                <div class="name">消消乐</div>
+                <div class="level">第4关</div>
+            </div>
+            <div class="game-item">
+                <div class="icon">🔢</div>
+                <div class="name">数独</div>
+                <div class="level">第5关</div>
+            </div>
+            <div class="game-item">
+                <div class="icon">🐸</div>
+                <div class="name">青蛙过河</div>
+                <div class="level">第6关</div>
+            </div>
+        </div>
+
+        <div class="screenshots">
+            <h2>🖼️ 游戏截图</h2>
+            <div class="screenshot-grid">
+                <div class="screenshot-item">
+                    <img src="screenshots/system1_level_select.jpg" alt="选关界面">
+                </div>
+                <div class="screenshot-item">
+                    <img src="screenshots/system2_score.jpg" alt="游戏界面">
+                </div>
+                <div class="screenshot-item">
+                    <img src="screenshots/system3_touch.jpg" alt="操作界面">
+                </div>
+            </div>
+        </div>
+
+        <div class="note">
+            <p><strong>注意：</strong>这是微信小程序项目，需要使用微信开发者工具打开才能运行。项目文件位于 <code>games/smallgame/</code> 目录。</p>
+        </div>
+    </div>
+</body>
+</html>
