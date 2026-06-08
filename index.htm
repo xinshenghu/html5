@@ -2,37 +2,160 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>个人网站</title>
+    <title>html5</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         body {
             font-family: Arial, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        header {
+            background-color: #333;
+            color: white;
+            padding: 20px;
             text-align: center;
-            padding-top: 50px;
+            font-size: 24px;
+            font-weight: bold;
         }
-        h1 {
-            font-size: 36px;
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        .sidebar {
+            width: 280px;
+            background-color: #f5f5f5;
+            border-right: 1px solid #ddd;
+            overflow-y: auto;
+            padding: 15px;
+        }
+        .tree ul {
+            list-style: none;
+            padding-left: 15px;
+        }
+        .tree li {
+            margin: 5px 0;
+        }
+        .tree .folder {
+            cursor: pointer;
+            font-weight: bold;
             color: #333;
-            margin-bottom: 40px;
+            display: flex;
+            align-items: center;
         }
-        a {
-            display: block;
-            font-size: 20px;
+        .tree .folder::before {
+            content: '▶';
+            margin-right: 5px;
+            font-size: 10px;
+            transition: transform 0.2s;
+        }
+        .tree .folder.open::before {
+            transform: rotate(90deg);
+        }
+        .tree .file {
             color: #0066cc;
-            text-decoration: none;
-            margin: 20px 0;
+            cursor: pointer;
+            padding-left: 10px;
         }
-        a:hover {
+        .tree .file:hover {
             text-decoration: underline;
+        }
+        .tree .file::before {
+            content: '○';
+            margin-right: 5px;
+            font-size: 8px;
+        }
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #fff;
+        }
+        .content-header {
+            padding: 15px;
+            background-color: #fafafa;
+            border-bottom: 1px solid #ddd;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        iframe {
+            flex: 1;
+            width: 100%;
+            border: none;
+            background-color: #fff;
         }
     </style>
 </head>
 <body>
-    <h1>个人网站</h1>
-    <a href="luping.html">录屏</a>
-    <a href="#">chatgpt自动生成网站</a>
-    <a href="#">模板 西安</a>
-    <a href="#">论语</a>
-    <a href="tianqi/index.html">天气</a>
-    <a href="fanzhuanpintu/index.html">jQuery 翻转拼图游戏</a>
+    <header>html5</header>
+    <div class="container">
+        <div class="sidebar">
+            <div class="tree">
+                <ul>
+                    <li>
+                        <div class="folder" onclick="toggleFolder(this)">工具类</div>
+                        <ul>
+                            <li><div class="file" onclick="openLink('luping.html', '录屏')">录屏</div></li>
+                            <li><div class="file" onclick="openLink('tianqi/index.html', '天气')">天气</div></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <div class="folder" onclick="toggleFolder(this)">游戏类</div>
+                        <ul>
+                            <li><div class="file" onclick="openLink('fanzhuanpintu/index.html', 'jQuery 翻转拼图游戏')">jQuery 翻转拼图游戏</div></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <div class="folder" onclick="toggleFolder(this)">个人展示</div>
+                        <ul>
+                            <li><div class="file" onclick="openLink('person/index.html', '个人信息展示')">个人信息展示</div></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <div class="folder" onclick="toggleFolder(this)">其他</div>
+                        <ul>
+                            <li><div class="file" onclick="openLink('#', 'chatgpt自动生成网站')">chatgpt自动生成网站</div></li>
+                            <li><div class="file" onclick="openLink('#', '模板 西安')">模板 西安</div></li>
+                            <li><div class="file" onclick="openLink('#', '论语')">论语</div></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="main-content">
+            <div class="content-header" id="content-title">选择一个项目开始浏览</div>
+            <iframe id="content-frame" src="" frameborder="0"></iframe>
+        </div>
+    </div>
+    <script>
+        function toggleFolder(element) {
+            element.classList.toggle('open');
+            const nextUl = element.nextElementSibling;
+            if (nextUl) {
+                nextUl.style.display = nextUl.style.display === 'none' ? 'block' : 'none';
+            }
+        }
+        function openLink(url, title) {
+            document.getElementById('content-title').textContent = title;
+            const frame = document.getElementById('content-frame');
+            if (url === '#') {
+                frame.src = 'about:blank';
+            } else {
+                frame.src = url;
+            }
+        }
+        document.querySelectorAll('.folder').forEach(folder => {
+            const nextUl = folder.nextElementSibling;
+            if (nextUl) {
+                nextUl.style.display = 'none';
+            }
+        });
+    </script>
 </body>
 </html>
