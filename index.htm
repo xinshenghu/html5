@@ -120,9 +120,9 @@
                     <li>
                         <div class="folder" onclick="toggleFolder(this)">其他</div>
                         <ul>
-                            <li><div class="file" onclick="openLink('#', 'chatgpt自动生成网站')">chatgpt自动生成网站</div></li>
-                            <li><div class="file" onclick="openLink('#', '模板 西安')">模板 西安</div></li>
-                            <li><div class="file" onclick="openLink('#', '论语')">论语</div></li>
+                            <li><div class="file" onclick="showPlaceholder('chatgpt自动生成网站')">chatgpt自动生成网站</div></li>
+                            <li><div class="file" onclick="showPlaceholder('模板 西安')">模板 西安</div></li>
+                            <li><div class="file" onclick="showPlaceholder('论语')">论语</div></li>
                         </ul>
                     </li>
                 </ul>
@@ -144,11 +144,56 @@
         function openLink(url, title) {
             document.getElementById('content-title').textContent = title;
             const frame = document.getElementById('content-frame');
-            if (url === '#') {
-                frame.src = 'about:blank';
-            } else {
-                frame.src = url;
-            }
+            frame.src = url;
+        }
+        function showPlaceholder(title) {
+            document.getElementById('content-title').textContent = title;
+            const frame = document.getElementById('content-frame');
+            frame.srcdoc = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <title>${title}</title>
+                    <style>
+                        body {
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            height: 100vh;
+                            margin: 0;
+                            font-family: Arial, sans-serif;
+                            background-color: #f5f5f5;
+                        }
+                        .placeholder {
+                            text-align: center;
+                            padding: 40px;
+                            background: white;
+                            border-radius: 10px;
+                            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                        }
+                        .icon {
+                            font-size: 48px;
+                            margin-bottom: 20px;
+                        }
+                        h2 {
+                            color: #333;
+                            margin-bottom: 10px;
+                        }
+                        p {
+                            color: #666;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="placeholder">
+                        <div class="icon">🔄</div>
+                        <h2>${title}</h2>
+                        <p>该页面正在建设中...</p>
+                    </div>
+                </body>
+                </html>
+            `;
         }
         document.querySelectorAll('.folder').forEach(folder => {
             const nextUl = folder.nextElementSibling;
