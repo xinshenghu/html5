@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>青蛙过河</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#1a1a2e;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:sans-serif;color:#fff;touch-action:none;padding:10px}
+h1{color:#00bcd4;margin:10px}
+.info{margin-bottom:10px;font-size:1.1em}
+.board{display:flex;gap:6px;justify-content:center;align-items:center;padding:15px 0}
+.rock{width:clamp(38px,9vw,52px);height:clamp(38px,9vw,52px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:clamp(18px,4vw,28px);cursor:pointer;transition:transform 0.2s;background:#3a3a5c;flex-shrink:0}
+.rock.left{background:#388e3c}
+.rock.right{background:#d32f2f}
+.rock.selected{transform:scale(1.2);outline:3px solid #fff;outline-offset:2px;z-index:1}
+.rock.empty{background:#333;cursor:pointer}
+.rock.empty:hover{background:#444}
+.btns{margin-top:15px;display:flex;gap:10px}
+button{padding:10px 24px;border:none;border-radius:6px;font-size:1em;cursor:pointer;color:#fff}
+.btn-restart{background:#00bcd4}
+.btn-back{background:#555}
+.rules{margin-top:15px;color:#999;font-size:.85em;text-align:center;max-width:380px;line-height:1.6}
+</style>
+</head>
+<body>
+<h1>🐸 青蛙过河</h1>
+<div class="info">步数: <span id="moves">0</span></div>
+<div class="board" id="board"></div>
+<div class="btns">
+  <button class="btn-restart" onclick="init()">重新开始</button>
+  <button class="btn-back" onclick="history.back()">← 返回</button>
+</div>
+<div class="rules">🟢 左青蛙只往右跳，🔴 右青蛙只往左跳<br>可跳到相邻空位，或跳过一只对面的青蛙</div>
+<script>
+const N=3;
+let state,selected=-1,moves=0,won=false;
+
+function init(){
+  state=[];
+  for(let i=0;i<N;i++) state.push(0);  // 左边青蛙
+  state.push(2);                        // 空位
+  for(let i=0;i<N;i++) state.push(1);  // 右边青蛙
+  selected=-1;moves=0;won=false;
+  document.getElementById('moves').textContent='0';
+  render();
+}
+
+function click(i){
+  if(won) return;
+  if(selected===-1){
+    // 选一只青蛙（不能选空位）
+    if(state[i]!==2) selected=i;
+  }else if(selected===i){
+    // 取消选择
+    selected=-1;
+  }else{
+    // 尝试移动
+    let s=state[selected];
+    if(state[i]===2){  // 目标必须是空位
+      if(s===0 && (i===selected+1 || (i===selected+2 && state[selected+1]===1))){
+        // 左蛙往右：相邻空 或 跳过右边蛙
+        state[i]=0; state[selected]=2; moves++; selected=-1;
+      }else if(s===1 && (i===selected-1 || (i===selected-2 && state[selected-1]===0))){
+        // 右蛙往左：相邻空 或 跳过左边蛙
+        state[i]=1; state[selected]=2; moves++; selected=-1;
+      }
+    }
+    document.getElementById('moves').textContent=moves;
+  }
+  render();
+  // 检查胜利
+  let leftSide=state.slice(0,N), rightSide=state.slice(N+1);
+  if(leftSide.every(v=>v===1) && rightSide.every(v=>v===0)){
+    won=true;
+    setTimeout(()=>alert('🎉 过关！用了 '+moves+' 步'), 100);
+  }
+}
+
+function render(){
+  const b=document.getElementById('board');
+  b.innerHTML='';
+  state.forEach((v,i)=>{
+    const r=document.createElement('div');
+    r.className='rock';
+    if(v===0) r.classList.add('left'),r.textContent='🐸';
+    else if(v===1) r.classList.add('right'),r.textContent='🐸';
+    else r.classList.add('empty'),r.textContent='⚫';
+    if(i===selected) r.classList.add('selected');
+    r.addEventListener('click',()=>click(i));
+    b.appendChild(r);
+  });
+}
+init();
+</script>
+</body>
+</html>

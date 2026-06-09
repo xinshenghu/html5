@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>消消乐</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#1a1a2e;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:sans-serif;color:#fff;touch-action:none;padding:10px}
+h1{color:#9c27b0;margin:10px}
+.score{font-size:1.1em;margin-bottom:10px}
+.grid{display:grid;grid-template-columns:repeat(8,1fr);gap:2px;width:min(90vw,360px)}
+.cell{aspect-ratio:1;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:clamp(16px,5vw,24px)}
+.cell.selected{outline:3px solid #fff;outline-offset:-3px}
+.btns{margin-top:15px;display:flex;gap:10px}
+button{padding:10px 20px;border:none;border-radius:6px;font-size:1em;cursor:pointer;color:#fff}
+.btn-restart{background:#9c27b0}
+.btn-back{background:#555}
+</style>
+</head>
+<body>
+<h1>🔮 消消乐</h1>
+<div class="score">得分: <span id="score">0</span></div>
+<div class="grid" id="grid"></div>
+<div class="btns">
+  <button class="btn-restart" onclick="init()">重新开始</button>
+  <button class="btn-back" onclick="history.back()">← 返回</button>
+</div>
+<script>
+const R=8,C=8,EMOJI=['','','','',''];
+const COLORS=['#e53935','#43a047','#1e88e5','#fdd835','#8e24aa','#ff6f00'];
+let board,selR=-1,selC=-1,score=0;
+
+function init(){
+  board=Array(R).fill().map(()=>Array(C).fill().map(()=>Math.floor(Math.random()*6)));
+  score=0;selR=selC=-1;document.getElementById('score').textContent='0';
+  removeMatches();render()
+}
+function removeMatches(){
+  let changed=true;
+  while(changed){changed=false;
+    for(let r=0;r<R;r++)for(let c=0;c<C-2;c++){if(board[r][c]>=0&&board[r][c]===board[r][c+1]&&board[r][c]===board[r][c+2]){let v=board[r][c];let k=c;while(k<C&&board[r][k]===v){board[r][k]=-1;k++}score+=(k-c)*10;changed=true}}
+    for(let c=0;c<C;c++)for(let r=0;r<R-2;r++){if(board[r][c]>=0&&board[r][c]===board[r+1][c]&&board[r][c]===board[r+2][c]){let v=board[r][c];let k=r;while(k<R&&board[k][c]===v){board[k][c]=-1;k++}score+=(k-r)*10;changed=true}}
+    for(let c=0;c<C;c++){let fill=R-1;for(let r=R-1;r>=0;r--){if(board[r][c]>=0)board[fill--][c]=board[r][c]}for(let r=fill;r>=0;r--)board[r][c]=Math.floor(Math.random()*6)}
+    document.getElementById('score').textContent=score
+  }
+}
+function render(){
+  const g=document.getElementById('grid');g.innerHTML='';
+  for(let r=0;r<R;r++)for(let c=0;c<C;c++){
+    const cell=document.createElement('div');cell.className='cell';
+    if(r===selR&&c===selC)cell.classList.add('selected');
+    cell.style.background=COLORS[board[r][c]];cell.textContent=EMOJI[board[r][c]];
+    const ri=r,ci=c;
+    cell.addEventListener('click',()=>{
+      if(selR===-1){selR=ri;selC=ci}else{
+        if(Math.abs(selR-ri)+Math.abs(selC-ci)===1){[board[selR][selC],board[ri][ci]]=[board[ri][ci],board[selR][selC]];removeMatches()}
+        selR=-1;selC=-1
+      }render()
+    });
+    g.appendChild(cell)
+  }
+}
+init();
+</script>
+</body>
+</html>
