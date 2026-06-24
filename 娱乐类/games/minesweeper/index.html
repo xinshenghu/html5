@@ -8,6 +8,7 @@
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#1a1a2e;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:sans-serif;color:#fff;touch-action:none}
 h1{color:#ff9800;margin:10px}
+.win-msg{color:#4caf50;font-size:1.2em;margin:10px;font-weight:bold}
 .info{margin-bottom:10px;font-size:1.1em}
 .grid{display:grid;grid-template-columns:repeat(9,36px);gap:2px}
 .cell{width:36px;height:36px;background:#3a3a5c;border-radius:4px;display:flex;align-items:center;justify-content:center;font-weight:bold;cursor:pointer;font-size:16px}
@@ -22,27 +23,28 @@ button{padding:10px 20px;border:none;border-radius:6px;font-size:1em;cursor:poin
 </head>
 <body>
 <h1>💣 扫雷</h1>
-<div class="info">🚩 <span id="flags">0</span> / <span id="mines">10</span></div>
+<div id="win-msg" class="win-msg" style="display:none;">🎉 恭喜你赢了！</div>
+<div class="info">🚩 <span id="flags">0</span> / <span id="mines">6</span></div>
 <div class="grid" id="grid"></div>
 <div class="btns">
   <button class="btn-restart" onclick="init()">重新开始</button>
   <button class="btn-back" onclick="history.back()">← 返回</button>
 </div>
 <script>
-const R=9,C=9,M=10;
-let board,revealed,flagged,gameOver;
+const R=9,C=9,M=6;
+let board,revealed,flagged,gameOver,hasWon=false;
 function init(){
-  board=Array(R).fill().map(()=>Array(C).fill(0));revealed=Array(R).fill().map(()=>Array(C).fill(false));flagged=Array(R).fill().map(()=>Array(C).fill(false));gameOver=false;
+  board=Array(R).fill().map(()=>Array(C).fill(0));revealed=Array(R).fill().map(()=>Array(C).fill(false));flagged=Array(R).fill().map(()=>Array(C).fill(false));gameOver=false;hasWon=false;
   let placed=0;while(placed<M){let r=Math.floor(Math.random()*R),c=Math.floor(Math.random()*C);if(board[r][c]!==-1){board[r][c]=-1;placed++}}
   for(let r=0;r<R;r++)for(let c=0;c<C;c++){if(board[r][c]===-1)continue;let cnt=0;for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){let nr=r+dr,nc=c+dc;if(nr>=0&&nr<R&&nc>=0&&nc<C&&board[nr][nc]===-1)cnt++}board[r][c]=cnt}
-  document.getElementById('mines').textContent=M;document.getElementById('flags').textContent='0';render()
+  document.getElementById('mines').textContent=M;document.getElementById('flags').textContent='0';document.getElementById('win-msg').style.display='none';render()
 }
 function reveal(r,c){
   if(gameOver||revealed[r][c]||flagged[r][c])return;
   revealed[r][c]=true;
   if(board[r][c]===-1){gameOver=true;alert('💥 踩雷了！');render();return}
   if(board[r][c]===0){for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){let nr=r+dr,nc=c+dc;if(nr>=0&&nr<R&&nc>=0&&nc<C)reveal(nr,nc)}}
-  if(revealed.flat().filter(v=>!v).length===M){gameOver=true;alert('🎉 你赢了！')}
+  if(revealed.flat().filter(v=>!v).length===M){gameOver=true;hasWon=true;document.getElementById('win-msg').style.display='block';render();return}
   render()
 }
 function render(){

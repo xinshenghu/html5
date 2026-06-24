@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>长安模板</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  height:100vh;
+  background:url('img/bg.jpg') center/cover no-repeat;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-family:sans-serif;
+  position:relative;
+}
+body::before{
+  content:'';
+  position:absolute;
+  top:0;left:0;right:0;bottom:0;
+  background:rgba(0,0,0,0.3);
+}
+.container{
+  text-align:center;
+  color:#fff;
+  text-shadow:2px 2px 4px rgba(0,0,0,0.5);
+  position:relative;
+  z-index:1;
+}
+.container h1{font-size:3em;margin-bottom:20px}
+.container p{font-size:1.5em}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🏯 长安</h1>
+  <p>遇见一花一叶！遇见大千世界！</p>
+</div>
+</body>
+</html>

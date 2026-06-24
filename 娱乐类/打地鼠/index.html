@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>打地鼠</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Microsoft YaHei', sans-serif;
+        }
+        #game-container {
+            position: relative;
+            width: 400px;
+            height: 500px;
+            background: #8B4513;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+        #header {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 20px;
+            background: rgba(0,0,0,0.3);
+        }
+        .stat {
+            color: #fff;
+            font-size: 18px;
+            background: rgba(255,255,255,0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+        }
+        #game-area {
+            position: relative;
+            width: 100%;
+            height: 380px;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%238B4513" width="100" height="100"/><circle cx="20" cy="20" r="3" fill="%23A0522D"/><circle cx="60" cy="40" r="4" fill="%23A0522D"/><circle cx="30" cy="70" r="3" fill="%23A0522D"/></svg>');
+        }
+        .mole {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(circle at 30% 30%, #DEB887, #8B4513);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.1s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 30px;
+        }
+        .mole:hover { transform: scale(1.1); }
+        .mole:active { transform: scale(0.9); }
+        .mole::before {
+            content: '🐹';
+            font-size: 35px;
+        }
+        .mole.hit {
+            background: radial-gradient(circle at 30% 30%, #FFD700, #FFA500);
+        }
+        .mole.hit::before { content: '⭐'; }
+        #win-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: rgba(255,255,255,0.95);
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            z-index: 100;
+            transition: transform 0.5s;
+        }
+        #win-message.show { transform: translate(-50%, -50%) scale(1); }
+        #win-message h2 { color: #e74c3c; font-size: 32px; margin-bottom: 20px; }
+        #win-message p { color: #333; font-size: 18px; margin-bottom: 20px; }
+        #restart-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        #restart-btn:hover { transform: scale(1.05); }
+        #restart-btn:active { transform: scale(0.95); }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="header">
+            <div class="stat">⏱️ 时间：<span id="timer">60</span>s</div>
+            <div class="stat">🎯 得分：<span id="score">0</span>/6</div>
+        </div>
+        <div id="game-area"></div>
+        <div id="win-message">
+            <h2>🎉 恭喜你!</h2>
+            <p>你成功打中了 6 只地鼠!</p>
+            <button id="restart-btn">再来一局</button>
+        </div>
+    </div>
+
+    <script>
+        const gameArea = document.getElementById('game-area');
+        const timerEl = document.getElementById('timer');
+        const scoreEl = document.getElementById('score');
+        const winMessage = document.getElementById('win-message');
+        const restartBtn = document.getElementById('restart-btn');
+
+        let score = 0;
+        let timeLeft = 60;
+        let gameTimer = null;
+        let moleTimer = null;
+        let gameActive = false;
+
+        function startGame() {
+            score = 0;
+            timeLeft = 60;
+            gameActive = true;
+            scoreEl.textContent = score;
+            timerEl.textContent = timeLeft;
+            winMessage.classList.remove('show');
+            gameArea.innerHTML = '';
+
+            // 倒计时
+            gameTimer = setInterval(() => {
+                timeLeft--;
+                timerEl.textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+
+            // 随机出现地鼠
+            spawnMole();
+        }
+
+        function spawnMole() {
+            if (!gameActive) return;
+
+            const mole = document.createElement('div');
+            mole.className = 'mole';
+
+            // 随机位置 (避开边缘)
+            const x = Math.random() * (gameArea.clientWidth - 80) + 10;
+            const y = Math.random() * (gameArea.clientHeight - 80) + 10;
+            mole.style.left = x + 'px';
+            mole.style.top = y + 'px';
+
+            // 点击事件
+            mole.onclick = () => {
+                if (!gameActive || mole.classList.contains('hit')) return;
+                mole.classList.add('hit');
+                score++;
+                scoreEl.textContent = score;
+
+                // 检查胜利
+                if (score >= 6) {
+                    showWin();
+                }
+            };
+
+            gameArea.appendChild(mole);
+
+            // 2 秒后消失
+            setTimeout(() => {
+                if (mole.parentNode) {
+                    mole.remove();
+                }
+            }, 2000);
+
+            // 随机间隔继续出现
+            moleTimer = setTimeout(spawnMole, Math.random() * 800 + 400);
+        }
+
+        function showWin() {
+            gameActive = false;
+            clearInterval(gameTimer);
+            clearTimeout(moleTimer);
+            winMessage.classList.add('show');
+        }
+
+        function endGame() {
+            gameActive = false;
+            clearInterval(gameTimer);
+            clearTimeout(moleTimer);
+            if (score < 6) {
+                alert('时间到！得分：' + score);
+            }
+        }
+
+        restartBtn.onclick = startGame;
+
+        // 开始游戏
+        startGame();
+    </script>
+</body>
+</html>
