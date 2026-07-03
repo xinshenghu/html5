@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>打飞机游戏</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 100vh;
+    font-family: sans-serif;
+    color: #fff;
+    overflow: hidden;
+    padding-top: 5px;
+}
+.info { display: flex; gap: 20px; margin: 5px; font-size: 0.9em; }
+.score { color: #ff0; }
+canvas { border: 2px solid #0f0; box-shadow: 0 0 10px rgba(0,255,0,0.5); max-height: 60vh; }
+.btns { margin-top: 8px; display: flex; gap: 8px; }
+button {
+    padding: 5px 12px;
+    border: 1px solid #0f0;
+    border-radius: 4px;
+    font-size: 0.85em;
+    cursor: pointer;
+    color: #0f0;
+    background: #001100;
+}
+button:hover { background: #0f0; color: #000; }
+.game-over {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0,0,0,0.9);
+    padding: 30px;
+    border: 2px solid #f00;
+    border-radius: 8px;
+    text-align: center;
+    display: none;
+}
+.game-over h2 { color: #f00; font-size: 1.5em; margin-bottom: 15px; }
+</style>
+</head>
+<body>
+<div class="info">
+    <span class="score">得分：<span id="score">0</span></span>
+    <span class="score">生命：<span id="lives">3</span></span>
+</div>
+<canvas id="gameCanvas" width="270" height="390"></canvas>
+<div class="btns">
+    <button onclick="startGame()">重新开始</button>
+    <button onclick="pauseGame()">暂停</button>
+    <button onclick="history.back()">返回</button>
+</div>
+<div class="game-over" id="gameOver">
+    <h2>游戏结束!</h2>
+    <p>最终得分：<span id="finalScore">0</span></p>
+</div>
+<script>
+// ==================== 游戏配置 ====================
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+// 游戏状态
+let gameRunning = false;
+let gamePaused = false;
+let score = 0;
+let lives = 3;
+let animationId;
+
+// 玩家飞机
+const player = {
+    x: canvas.width / 2,
+    y: canvas.height - 45,
+    width: 22,
+    height: 22,
+    speed: 4,
+    color: '#0f0'
+};
+
+// 子弹数组
+let bullets = [];
+const bulletSpeed = 10;
+
+// 敌机数组
+let enemies = [];
+const enemySpeed = 2;
+let enemySpawnTimer = 0;
+let enemySpawnInterval = 50;
+
+// 按键状态
+const keys = {
+    ArrowLeft: false,
+    ArrowRight: false,
+    ArrowUp: false,
+    ArrowDown: false,
+    KeyA: false,
+    KeyD: false,
+    KeyW: false,
+    KeyS: false
+};
+
+// 自动射击
+let autoShootTimer = 0;
+const autoShootInterval = 12;
+
+// ==================== 事件监听 ====================
+document.addEventListener('keydown', (e) => {
+    if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.ArrowLeft = true;
+    if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.ArrowRight = true;
+    if (e.code === 'ArrowUp' || e.code === 'KeyW') keys.ArrowUp = true;
+    if (e.code === 'ArrowDown' || e.code === 'KeyS') keys.ArrowDown = true;
+});
+
+document.addEventListener('keyup', (e) => {
+    if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.ArrowLeft = false;
+    if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.ArrowRight = false;
+    if (e.code === 'ArrowUp' || e.code === 'KeyW') keys.ArrowUp = false;
+    if (e.code === 'ArrowDown' || e.code === 'KeyS') keys.ArrowDown = false;
+});
+
+// 触摸控制
+let touchStartX = 0;
+canvas.addEventListener('touchstart', (e) => { e.preventDefault(); touchStartX = e.touches[0].clientX; });
+canvas.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    const touchX = e.touches[0].clientX;
+    player.x += (touchX - touchStartX) * 0.8;
+    player.x = Math.max(player.width/2, Math.min(canvas.width - player.width/2, player.x));
+    touchStartX = touchX;
+});
+canvas.addEventListener('touchend', (e) => { e.preventDefault(); shoot(); });
+
+// ==================== 游戏函数 ====================
+function startGame() {
+    score = 0; lives = 3; bullets = []; enemies = []; player.x = canvas.width / 2;
+    gameRunning = true; gamePaused = false;
+    document.getElementById('score').textContent = '0';
+    document.getElementById('lives').textContent = '3';
+    document.getElementById('gameOver').style.display = 'none';
+    if (animationId) cancelAnimationFrame(animationId);
+    gameLoop();
+}
+
+function pauseGame() { gamePaused = !gamePaused; if (!gamePaused) gameLoop(); }
+
+function gameOver() {
+    gameRunning = false;
+    document.getElementById('finalScore').textContent = score;
+    document.getElementById('gameOver').style.display = 'block';
+}
+
+function shoot() {
+    if (!gameRunning || gamePaused) return;
+    bullets.push({ x: player.x, y: player.y - 10, width: 2, height: 7, color: '#ff0' });
+}
+
+function spawnEnemy() {
+    const size = 18 + Math.random() * 12;
+    enemies.push({
+        x: Math.random() * (canvas.width - size) + size/2,
+        y: -size, width: size, height: size,
+        color: `hsl(${Math.random() * 60}, 100%, 50%)`,
+        speed: enemySpeed + Math.random() * 1
+    });
+}
+
+function update() {
+    if (!gameRunning || gamePaused) return;
+
+    if (keys.ArrowLeft || keys.KeyA) player.x -= player.speed;
+    if (keys.ArrowRight || keys.KeyD) player.x += player.speed;
+    if (keys.ArrowUp || keys.KeyW) player.y -= player.speed;
+    if (keys.ArrowDown || keys.KeyS) player.y += player.speed;
+
+    player.x = Math.max(player.width/2, Math.min(canvas.width - player.width/2, player.x));
+    player.y = Math.max(player.height/2, Math.min(canvas.height - player.height/2, player.y));
+
+    autoShootTimer++;
+    if (autoShootTimer >= autoShootInterval) { shoot(); autoShootTimer = 0; }
+
+    bullets.forEach(b => b.y -= bulletSpeed);
+    bullets = bullets.filter(b => b.y > -b.height);
+
+    enemySpawnTimer++;
+    if (enemySpawnTimer >= enemySpawnInterval) { spawnEnemy(); enemySpawnTimer = 0; if (enemySpawnInterval > 20) enemySpawnInterval--; }
+
+    enemies.forEach(e => e.y += e.speed);
+
+    for (let i = bullets.length - 1; i >= 0; i--) {
+        for (let j = enemies.length - 1; j >= 0; j--) {
+            if (isColliding(bullets[i], enemies[j])) { bullets.splice(i, 1); enemies.splice(j, 1); score += 10; document.getElementById('score').textContent = score; break; }
+        }
+    }
+
+    for (let i = enemies.length - 1; i >= 0; i--) {
+        const enemy = enemies[i];
+        if (isColliding(player, enemy)) { enemies.splice(i, 1); lives--; document.getElementById('lives').textContent = lives; if (lives <= 0) gameOver(); continue; }
+        if (enemy.y > canvas.height) { enemies.splice(i, 1); lives--; document.getElementById('lives').textContent = lives; if (lives <= 0) gameOver(); }
+    }
+}
+
+function isColliding(r1, r2) {
+    return Math.abs(r1.x - r2.x) < (r1.width + r2.width) / 2 && Math.abs(r1.y - r2.y) < (r1.height + r2.height) / 2;
+}
+
+function draw() {
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = '#fff';
+    for (let i = 0; i < 40; i++) {
+        const x = (Date.now() / 50 + i * 100) % canvas.width;
+        const y = (Date.now() / 30 + i * 50) % canvas.height;
+        ctx.fillRect(x, y, 1.5, 1.5);
+    }
+
+    if (!gameRunning) return;
+
+    ctx.fillStyle = player.color;
+    ctx.beginPath();
+    ctx.moveTo(player.x, player.y - player.height/2);
+    ctx.lineTo(player.x - player.width/2, player.y + player.height/2);
+    ctx.lineTo(player.x + player.width/2, player.y + player.height/2);
+    ctx.closePath();
+    ctx.fill();
+
+    bullets.forEach(b => { ctx.fillStyle = b.color; ctx.fillRect(b.x - b.width/2, b.y - b.height/2, b.width, b.height); });
+
+    enemies.forEach(e => {
+        ctx.fillStyle = e.color;
+        ctx.fillRect(e.x - e.width/2, e.y - e.height/2, e.width, e.height);
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 1;
+        ctx.strokeRect(e.x - e.width/2, e.y - e.height/2, e.width, e.height);
+    });
+
+    if (gamePaused) {
+        ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#fff'; ctx.font = '24px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText('游戏暂停', canvas.width/2, canvas.height/2);
+    }
+}
+
+function gameLoop() {
+    if (!gameRunning) return;
+    update(); draw();
+    if (!gamePaused) animationId = requestAnimationFrame(gameLoop);
+}
+
+// 自动开始游戏
+startGame();
+</script>
+</body>
+</html>
