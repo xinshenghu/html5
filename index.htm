@@ -34,7 +34,8 @@
                         <div class="folder" onclick="toggleFolder(this)">🔧 工具类</div>
                         <ul>
                             <li><div class="file" onclick="openLink('工具类/tools/luping.html', '录屏')">📹 录屏</div></li>
-                            <li><div class="file" onclick="openLink('工具类/tools/tianqi/index.html', '天气')">天气</div></li>
+                            <li><div class="file" onclick="openLink('工具类/tools/tianqi/index.html', '天气')">☀️ 天气</div></li>
+                            <li><div class="file" onclick="openLink('工具类/地点推荐.html', '地点推荐')">🔍 地点推荐</div></li>
                         </ul>
                     </li>
                     <li>
@@ -74,6 +75,7 @@
                             <li><div class="file" onclick="openLink('生活类/预测/index.html', '预测')">🔯 预测</div></li>
                             <li><div class="file" onclick="openLink('生活类/相亲/xiangqin.htm', '相亲')">💕 相亲</div></li>
                             <li><div class="file" onclick="openLink('生活类/中间地点推荐.html', '中间地点推荐')">📍 中间地点推荐</div></li>
+                            <li><div class="file" onclick="openLink('生活类/足疗推荐.html', '足疗推荐')">🦶 足疗推荐</div></li>
                             <li><div class="file" onclick="openLink('生活类/person/index.html', '个人信息')">👤 个人信息</div></li>
                         </ul>
                     </li>
@@ -86,6 +88,7 @@
         </div>
     </div>
     <script>
+        function fileId(url) { return 'nav_' + url.replace(/[^a-z0-9]/gi,'_'); }
         function toggleFolder(element) {
             element.classList.toggle('open');
             var ul = element.nextElementSibling;
@@ -104,44 +107,30 @@
         function openLink(url, title) {
             var clicked = event.target.closest('.file');
             if (clicked) activateFile(clicked, url, title);
-            location.hash = encodeURIComponent(url) + '|' + encodeURIComponent(title);
+            location.hash = '#' + fileId(url);
         }
-        function restoreState(url, title) {
-            var found = false;
+        function restoreFromHash() {
+            if (!location.hash) return;
+            var id = location.hash.substring(1);
+            var el = document.getElementById(id);
+            if (!el) return;
+            var onclick = el.getAttribute('onclick') || '';
+            var m = onclick.match(/openLink\('([^']+)',\s*'([^']+)'\)/);
+            if (m) activateFile(el, m[1], m[2]);
+        }
+        window.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('.file').forEach(function(f){
                 var onclick = f.getAttribute('onclick') || '';
-                if (onclick.indexOf("'"+url+"'") !== -1) {
-                    f.classList.add('active');
-                    var ul = f.closest('ul');
-                    if (ul) ul.style.display = 'block';
-                    var folder = ul.previousElementSibling;
-                    if (folder && folder.classList.contains('folder')) folder.classList.add('open');
-                    found = true;
-                }
+                var m = onclick.match(/openLink\('([^']+)'/);
+                if (m) f.id = fileId(m[1]);
             });
-            if (found) {
-                document.getElementById('content-title').textContent = title;
-                document.getElementById('content-frame').src = url;
-            }
-        }
-        window.addEventListener('load', function() {
-            if (location.hash) {
-                var parts = location.hash.substring(1).split('|');
-                var url = decodeURIComponent(parts[0]);
-                var title = decodeURIComponent(parts[1] || '');
-                if (url) restoreState(url, title);
-            }
+            document.querySelectorAll('.folder').forEach(function(folder) {
+                var ul = folder.nextElementSibling;
+                if (ul) ul.style.display = 'none';
+            });
+            restoreFromHash();
         });
-        window.addEventListener('hashchange', function() {
-            if (location.hash) {
-                var parts = location.hash.substring(1).split('|');
-                restoreState(decodeURIComponent(parts[0]), decodeURIComponent(parts[1] || ''));
-            }
-        });
-        document.querySelectorAll('.folder').forEach(function(folder) {
-            var ul = folder.nextElementSibling;
-            if (ul) ul.style.display = 'none';
-        });
+        window.addEventListener('hashchange', restoreFromHash);
     </script>
 </body>
 </html>

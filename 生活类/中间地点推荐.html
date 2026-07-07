@@ -141,7 +141,7 @@ function addMarker(pos,label,color,star){
       size:new AMap.Size(size,size),imageSize:new AMap.Size(size,size),
       image:'data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${star?size*0.4:size/2}" r="${star?size*0.35:size*0.4}" fill="${color}" opacity="0.9" stroke="#333" stroke-width="1.5"/>${star?`<polygon points="${size/2},${size-2} ${size*0.15},${size*0.55} ${size*0.85},${size*0.55}" fill="${color}" stroke="#333" stroke-width="1.5"/><text x="${size/2}" y="${size*0.48}" text-anchor="middle" fill="#000" font-size="${size*0.28}" font-weight="bold">★</text>`:''}</svg>`)
     }),
-    label:star?{content:label,direction:'top',offset:new AMap.Pixel(0,-8),style:{color:'#ffd200',fontSize:'11px',background:'rgba(0,0,0,0.75)',padding:'2px 6px',borderRadius:'4px'}}:null
+    label:star?{content:label,direction:'top',offset:new AMap.Pixel(0,-8),style:{color:'#000',fontSize:'11px',background:'#ffd200',padding:'2px 6px',borderRadius:'4px'}}:null
   });
   markers.push(m);
   return m;
@@ -182,7 +182,7 @@ function renderResults(pois,cfg,center){
       position:[p.location.split(',')[0],p.location.split(',')[1]],map,
       icon:new AMap.Icon({
         size:new AMap.Size(markerSize,markerSize),imageSize:new AMap.Size(markerSize,markerSize),
-        image:'data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${markerSize}" height="${markerSize}"><defs><filter id="s"><feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.4"/></filter></defs><circle cx="${markerSize/2}" cy="${markerSize/2}" r="10" fill="${color}" stroke="#333" stroke-width="2.5" filter="url(#s)"/><text x="${markerSize/2}" y="${markerSize/2+4}" text-anchor="middle" fill="#fff" font-size="11" font-weight="bold">${cfg.icon}</text></svg>`)
+        image:'data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${markerSize}" height="${markerSize}"><defs><filter id="s"><feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.4"/></filter></defs><circle cx="${markerSize/2}" cy="${markerSize/2}" r="10" fill="${color}" stroke="#333" stroke-width="2.5" filter="url(#s)"/><text x="${markerSize/2}" y="${markerSize/2+4}" text-anchor="middle" fill="#000" font-size="11" font-weight="bold">${cfg.icon}</text></svg>`)
       }),
       zIndex: 120,
       extData: poiData
@@ -205,7 +205,7 @@ function renderResults(pois,cfg,center){
       </div>`;
       const infoWindow = new AMap.InfoWindow({
         content: content,
-        offset: new AMap.Pixel(0, -20)
+        offset: new AMap.Pixel(0, -5)
       });
       infoWindow.open(map, [d.location.split(',')[0], d.location.split(',')[1]]);
     });
