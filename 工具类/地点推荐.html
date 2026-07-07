@@ -69,15 +69,14 @@ const KEY = '8d740b0d034e0c3d8ccf3403f99464f6';
 </script>
 <script src="https://webapi.amap.com/maps?v=2.0&key=8d740b0d034e0c3d8ccf3403f99464f6"></script>
 <script>
-let map, markers=[], centerMarker, circleMarker, currentType='足疗', currentCenter=null, currentDriving=null;
+let map, markers=[], centerMarker, circleMarker, currentType='美食', currentCenter=null, currentDriving=null;
 
 const TYPES = {
-  '足疗': {kw:'足疗',icon:'👣',color:'#f7971e'},
-  '按摩': {kw:'按摩',icon:'💆',color:'#9B59B6'},
-  '洗浴': {kw:'洗浴',icon:'🛁',color:'#3498DB'},
-  'SPA': {kw:'SPA',icon:'🌸',color:'#E91E63'},
   '美食': {kw:'美食',icon:'🍽',color:'#E74C3C'},
   '咖啡': {kw:'咖啡',icon:'☕',color:'#8B4513'},
+  '足疗': {kw:'足疗',icon:'👣',color:'#f7971e'},
+  '洗浴': {kw:'洗浴',icon:'🛁',color:'#3498DB'},
+  'SPA': {kw:'SPA',icon:'🌸',color:'#E91E63'},
   '酒店': {kw:'酒店',icon:'🏨',color:'#2ECC71'}
 };
 
