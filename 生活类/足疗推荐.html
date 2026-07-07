@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>地点搜索</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%23ffd200'/><text x='50' y='58' text-anchor='middle' font-size='36' fill='%23000' font-weight='bold'>📍</text></svg>" type="image/svg+xml">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,"Microsoft YaHei",sans-serif;background:#1a1a2e;color:#eee;height:100vh;display:flex;flex-direction:column}
+.top{background:rgba(20,20,40,0.95);padding:16px 20px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;z-index:10;border-bottom:1px solid rgba(255,255,255,0.08)}
+.top label{font-size:0.85em;color:#aaa;white-space:nowrap}
+.top input{padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#fff;font-size:0.9em;width:200px;outline:none}
+.top input:focus{border-color:#ffd200}
+.top select{padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#fff;font-size:0.9em;outline:none}
+.top button{padding:8px 16px;border-radius:8px;border:none;background:linear-gradient(135deg,#f7971e,#ffd200);color:#000;font-weight:bold;cursor:pointer;font-size:0.9em}
+.hot-btn{padding:4px 10px;border-radius:14px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.04);color:#aaa;cursor:pointer;font-size:0.75em}
+.hot-btn:hover{border-color:#ffd200;color:#ffd200}
+.top button:hover{opacity:0.9}
+.main{flex:1;display:flex;min-height:0}
+#map{flex:1}
+#panel{width:380px;background:rgba(20,20,40,0.95);overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+#panel h3{font-size:1em;color:#ffd200;margin-bottom:4px}
+.type-tabs{display:flex;gap:6px;margin-bottom:4px}
+.type-tab{padding:4px 12px;border-radius:12px;border:1px solid rgba(255,255,255,0.15);background:transparent;color:#aaa;cursor:pointer;font-size:0.8em}
+.type-tab.active{background:#ffd200;color:#000;border-color:#ffd200}
+.result-card{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 12px;cursor:pointer;transition:0.15s;display:flex;gap:10px;align-items:center}
+.result-card:hover,.result-card.active{border-color:#ffd200;background:rgba(255,210,0,0.06)}
+.result-card .num{width:24px;height:24px;border-radius:50%;background:rgba(255,210,0,0.15);display:flex;align-items:center;justify-content:center;font-size:0.75em;flex-shrink:0}
+.result-card .info{flex:1;min-width:0}
+.result-card .info .name{font-weight:600;font-size:0.85em}
+.result-card .info .addr{font-size:0.7em;color:#999;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.result-card .meta{text-align:right;flex-shrink:0}
+.result-card .meta .score{color:#ffd200;font-weight:bold;font-size:0.9em}
+.result-card .meta .dist{font-size:0.65em;color:#888}
+.nav-btn{width:24px;height:24px;border-radius:50%;background:#27ae60;color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.85em;cursor:pointer;flex-shrink:0}
+.nav-btn:hover{background:#2ecc71}
+.hint{text-align:center;color:#666;font-size:0.85em;padding:40px 0}
+.loc-info{background:rgba(255,210,0,0.08);border-radius:8px;padding:8px 12px;font-size:0.8em;color:#ffd200;text-align:center;display:none}
+</style>
+</head>
+<body>
+<div class="top">
+  <label>地点：</label><input id="location" placeholder="如：北京刘家窑" value="北京刘家窑">
+  <button onclick="search()">🔍 搜索周边</button>
+  <select id="radius" onchange="search()">
+    <option value="3000">3km</option>
+    <option value="5000" selected>5km</option>
+    <option value="10000">10km</option>
+  </select>
+  <span style="font-size:0.7em;color:#666">热门：</span>
+  <button class="hot-btn" onclick="setLoc('北京刘家窑')">刘家窑</button>
+  <button class="hot-btn" onclick="setLoc('北京西单')">西单</button>
+  <button class="hot-btn" onclick="setLoc('北京望京')">望京</button>
+  <button class="hot-btn" onclick="setLoc('北京国贸')">国贸</button>
+</div>
+<div class="main">
+  <div id="map"></div>
+  <div id="panel">
+    <div class="hint">👆 输入地点，点击搜索</div>
+    <div class="loc-info" id="locInfo"></div>
+    <div id="results"></div>
+  </div>
+</div>
+
+<script>
+window._AMapSecurityConfig = { securityJsCode: '' };
+const KEY = '8d740b0d034e0c3d8ccf3403f99464f6';
+</script>
+<script src="https://webapi.amap.com/maps?v=2.0&key=8d740b0d034e0c3d8ccf3403f99464f6"></script>
+<script>
+let map, markers=[], centerMarker, circleMarker, currentType='足疗', currentCenter=null, currentDriving=null;
+
+const TYPES = {
+  '足疗': {kw:'足疗',icon:'👣',color:'#f7971e'},
+  '按摩': {kw:'按摩',icon:'💆',color:'#9B59B6'},
+  '洗浴': {kw:'洗浴',icon:'🛁',color:'#3498DB'},
+  'SPA': {kw:'SPA',icon:'🌸',color:'#E91E63'}
+};
+
+function initMap(){
+  map = new AMap.Map('map',{
+    zoom:14,
+    center:[116.40,39.90],
+    resizeEnable:true,
+    styles:[
+      {"featureType":"poi","elementType":"labels.text.fill","stylers":{"color":"#fff"}},
+      {"featureType":"poi","elementType":"labels.text.stroke","stylers":{"color":"#1a1a2e"}},
+      {"featureType":"road","elementType":"labels.text.fill","stylers":{"color":"#aaa"}},
+      {"featureType":"road","elementType":"labels.text.stroke","stylers":{"color":"#1a1a2e"}},
+      {"featureType":"building","elementType":"labels.text.fill","stylers":{"color":"#fff"}},
+      {"featureType":"building","elementType":"labels.text.stroke","stylers":{"color":"#1a1a2e"}},
+      {"featureType":"green","elementType":"labels.text.fill","stylers":{"color":"#66cc66"}},
+      {"featureType":"water","elementType":"labels.text.fill","stylers":{"color":"#66aaff"}}
+    ]
+  });
+  document.getElementById('location').addEventListener('keydown',e=>{if(e.key==='Enter')search()});
+  search();
+}
+
+function setLoc(loc){
+  document.getElementById('location').value=loc;
+  search();
+}
+
+function showType(type){
+  currentType=type;
+  document.querySelectorAll('.type-tab').forEach(t=>t.classList.toggle('active',t.textContent.includes(type)));
+  search();
+}
+
+async function search(){
+  const loc=document.getElementById('location').value.trim();
+  if(!loc) return;
+
+  clearMarkers();
+  document.getElementById('results').innerHTML='<div class="hint">搜索中...</div>';
+  document.getElementById('locInfo').style.display='none';
+
+  let center;
+  try{
+    const r=await geocode(loc);
+    center=[r.location.lng,r.location.lat];
+  }catch(e){
+    document.getElementById('results').innerHTML='<div class="hint">❌ 地址解析失败: '+e.toString().substring(0,50)+'</div>';console.error('Geocode error:',e);
+    return;
+  }
+
+  currentCenter=center;
+  const radius=parseInt(document.getElementById('radius').value);
+  centerMarker=addMarker(center,'📍 '+loc,'#ffd200','★');
+  circleMarker=new AMap.Circle({center:center,radius:radius,map,strokeColor:'#ffd200',strokeWeight:1,strokeOpacity:0.3,fillOpacity:0.04,zIndex:1});
+  map.setFitView(null,false,[80,80,380,80]);
+
+  document.getElementById('locInfo').style.display='block';
+  document.getElementById('locInfo').innerHTML=`📍 ${loc} · 搜索半径${radius/1000}km`;
+
+  const cfg=TYPES[currentType];
+  const kw=cfg.kw;
+  const pois=await searchAround(center,kw,radius,25);
+  renderResults(pois,cfg,center);
+}
+
+function geocode(addr){
+  if(!addr.includes('北京')&&!addr.includes('市')&&addr.length<8) addr='北京'+addr;
+  return fetch(`https://restapi.amap.com/v3/geocode/geo?key=${KEY}&address=${encodeURIComponent(addr)}`)
+    .then(r=>r.json())
+    .then(d=>{
+      if(d.status==='1') return {location:{lng:parseFloat(d.geocodes[0].location.split(',')[0]),lat:parseFloat(d.geocodes[0].location.split(',')[1])}};
+      throw new Error(d.info||'geocode failed');
+    });
+}
+
+function searchAround(center,kw,radius,limit){
+  return new Promise((resolve)=>{
+    const url=`https://restapi.amap.com/v3/place/around?key=${KEY}&location=${center[0]},${center[1]}&keywords=${encodeURIComponent(kw)}&radius=${radius}&offset=${limit}&extensions=all&sortrule=distance`;
+    fetch(url).then(r=>r.json()).then(d=>resolve(d.pois||[]));
+  });
+}
+
+function addMarker(pos,label,color,star){
+  const size=star?32:22;
+  const m=new AMap.Marker({
+    position:pos,map,
+    icon:new AMap.Icon({
+      size:new AMap.Size(size,size),imageSize:new AMap.Size(size,size),
+      image:'data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${star?size*0.4:size/2}" r="${star?size*0.35:size*0.4}" fill="${color}" opacity="0.9" stroke="#333" stroke-width="1.5"/>${star?`<polygon points="${size/2},${size-2} ${size*0.15},${size*0.55} ${size*0.85},${size*0.55}" fill="${color}" stroke="#333" stroke-width="1.5"/><text x="${size/2}" y="${size*0.48}" text-anchor="middle" fill="#000" font-size="${size*0.28}" font-weight="bold">★</text>`:''}</svg>`)
+    }),
+    label:star?{content:label,direction:'top',offset:new AMap.Pixel(0,-8),style:{color:'#ffd200',fontSize:'11px',background:'rgba(0,0,0,0.75)',padding:'2px 6px',borderRadius:'4px'}}:null
+  });
+  markers.push(m);
+  return m;
+}
+
+function clearMarkers(){
+  markers.forEach(m=>m.setMap(null));markers=[];
+  if(centerMarker){centerMarker.setMap(null);centerMarker=null;}
+  if(circleMarker){circleMarker.setMap(null);circleMarker=null;}
+  if(currentDriving){currentDriving.clear();currentDriving=null;}
+}
+
+function renderResults(pois,cfg,center){
+  const panel=document.getElementById('results');
+  if(!pois.length){panel.innerHTML='<div class="hint">未找到结果</div>';return;}
+
+  let html='<div class="type-tabs">';
+  for(const [t,c] of Object.entries(TYPES)){
+    html+=`<button class="type-tab${t===currentType?' active':''}" onclick="showType('${t}')">${c.icon} ${t}</button>`;
+  }
+  html+='</div>';
+
+  const top10=pois.slice(0,10);
+  const color=cfg.color;
+
+  top10.forEach((p,i)=>{
+    const dist=p.distance?parseInt(p.distance):0;
+    const open=p.biz_ext&&p.biz_ext.open_time?p.biz_ext.open_time:'';
+    const cost=p.biz_ext&&p.biz_ext.cost?p.biz_ext.cost:'';
+    html+=`<div class="result-card" onclick="focusPOI([${p.location.split(',')[0]},${p.location.split(',')[1]}],'${p.name.replace(/'/g,"\\'")}')">
+      <div class="num" style="${i<3?'background:linear-gradient(135deg,#f7971e,#ffd200);color:#000':''}">${i+1}</div>
+      <div class="info">
+        <div class="name">${p.name}</div>
+        <div class="addr">${p.address||''}</div>
+        <div style="font-size:0.65em;color:#777">${open?'⏰'+open:''}${open&&cost?' · ':''}${cost?'💰'+cost:''}</div>
+      </div>
+      <div class="meta"><div class="score">${p.biz_ext&&p.biz_ext.rating?'⭐'+p.biz_ext.rating:''}</div><div class="dist">${dist>1000?(dist/1000).toFixed(1)+'km':dist+'m'}</div></div>
+      <div class="nav-btn" onclick="event.stopPropagation();navTo(${p.location.split(',')[0]},${p.location.split(',')[1]},'${p.name.replace(/'/g,"\\'")}')">🚗</div>
+    </div>`;
+
+    const poiData = p;
+    const markerSize = 28;
+    const m=new AMap.Marker({
+      position:[p.location.split(',')[0],p.location.split(',')[1]],map,
+      icon:new AMap.Icon({
+        size:new AMap.Size(markerSize,markerSize),imageSize:new AMap.Size(markerSize,markerSize),
+        image:'data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${markerSize}" height="${markerSize}"><defs><filter id="s"><feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.4"/></filter></defs><circle cx="${markerSize/2}" cy="${markerSize/2}" r="10" fill="${color}" stroke="#333" stroke-width="2.5" filter="url(#s)"/><text x="${markerSize/2}" y="${markerSize/2+4}" text-anchor="middle" fill="#fff" font-size="11" font-weight="bold">${cfg.icon}</text></svg>`)
+      }),
+      zIndex: 120,
+      extData: poiData
+    });
+    m.on('click', function(e){
+      const d = e.target.getExtData();
+      const rating = d.biz_ext && d.biz_ext.rating ? '⭐'+d.biz_ext.rating : '';
+      const tel = d.tel ? '<br> '+d.tel : '';
+      const type = d.type ? '<br> '+d.type : '';
+      const dpUrl = `https://m.dianping.com/search/keyword/2/0_${encodeURIComponent(d.name)}`;
+      const navUrl = `https://uri.amap.com/navigation?from=${currentCenter[0]},${currentCenter[1]}&to=${d.location}&mode=car&coordinate=gaode&callnative=1`;
+        const content = `<div style="padding:12px;max-width:300px;background:#1a1a2e">
+        <div style="font-size:15px;font-weight:bold;margin-bottom:6px;color:#fff">${cfg.icon} ${d.name}</div>
+        <div style="font-size:12px;color:#aaa;margin-bottom:4px">📍 ${d.address||'暂无地址'}</div>
+        ${rating?'<div style="font-size:12px;color:#ffd200;margin-bottom:4px">'+rating+'</div>':''}
+        ${tel?'<div style="font-size:12px;color:#aaa">'+tel+'</div>':''}
+        ${type?'<div style="font-size:12px;color:#aaa">'+type+'</div>':''}
+        <div style="font-size:11px;color:#888;margin-top:6px;margin-bottom:10px">距中心 ${d.distance?parseInt(d.distance)>1000?(parseInt(d.distance)/1000).toFixed(1)+'km':d.distance+'m':'--'}</div>
+        <div style="display:flex;gap:8px">
+          <button onclick="navTo(${d.location.split(',')[0]},${d.location.split(',')[1]},'${d.name.replace(/'/g,"\\'")}')" style="flex:1;padding:6px 12px;background:#27ae60;color:#fff;border:none;border-radius:14px;font-size:12px;font-weight:bold;cursor:pointer">🚗 路线规划</button>
+          <a href="${navUrl}" target="_blank" style="flex:1;padding:6px 12px;background:#f63;font-size:12px;color:#fff;text-decoration:none;border-radius:14px;font-weight:bold;text-align:center">📍 高德导航</a>
+          <a href="${dpUrl}" target="_blank" style="flex:1;padding:6px 12px;background:#ffd200;font-size:12px;color:#000;text-decoration:none;border-radius:14px;font-weight:bold;text-align:center">🔥 点评</a>
+        </div>
+      </div>`;
+      const infoWindow = new AMap.InfoWindow({
+        content: content,
+        offset: new AMap.Pixel(0, -20)
+      });
+      infoWindow.open(map, [d.location.split(',')[0], d.location.split(',')[1]]);
+    });
+    markers.push(m);
+  });
+
+  panel.innerHTML=html;
+}
+
+let selectedMarker = null;
+function focusPOI(pos,name){
+  var lng = parseFloat(pos[0]), lat = parseFloat(pos[1]);
+  map.setCenter([lng,lat]);
+  map.setZoom(16);
+  var best = null, bestDist = Infinity;
+  markers.forEach(function(m){
+    var mp = m.getPosition();
+    var d = Math.abs(mp.lng-lng)+Math.abs(mp.lat-lat);
+    if(d < bestDist){ bestDist = d; best = m; }
+  });
+  if(best){
+    if(selectedMarker) selectedMarker.setIcon(selectedMarker._normalIcon);
+    best._normalIcon = best.getIcon();
+    best.setIcon(new AMap.Icon({
+      size: new AMap.Size(36,36), imageSize: new AMap.Size(36,36),
+      image: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36"><circle cx="18" cy="13" r="12" fill="#ffd200" opacity="0.95" stroke="#fff" stroke-width="2"/><polygon points="18,36 7,18 29,18" fill="#ffd200" stroke="#fff" stroke-width="2"/><text x="18" y="16" text-anchor="middle" fill="#000" font-size="12" font-weight="bold">📍</text></svg>')
+    }));
+    selectedMarker = best;
+    var info = new AMap.InfoWindow({
+      content: '<div style="padding:4px 8px;font-size:14px;font-weight:bold">'+name+'</div>',
+      offset: new AMap.Pixel(0,-40)
+    });
+    info.open(map, [lng,lat]);
+    setTimeout(function(){ info.close(); }, 3000);
+  }
+}
+
+function navTo(lng,lat,name){
+  if(!currentCenter){return;}
+  if(currentDriving){currentDriving.clear();}
+  
+  AMap.plugin(['AMap.Driving'], function(){
+    currentDriving = new AMap.Driving({
+      map: map,
+      hideMarkers: false,
+      policy: AMap.DrivingPolicy.LEAST_TIME
+    });
+    
+    currentDriving.search(new AMap.LngLat(currentCenter[0], currentCenter[1]), new AMap.LngLat(lng, lat), function(status, result){
+      if(status === 'complete'){
+        const plan = result.routes[0];
+        const dist = plan.distance;
+        const time = plan.time;
+        
+        map.setFitView(null,false,[80,80,380,80]);
+        
+        const panel=document.getElementById('results');
+        let navHtml=panel.innerHTML;
+        navHtml+=`<div style="background:rgba(39,174,96,0.1);border:1px solid rgba(39,174,96,0.3);border-radius:10px;padding:12px;margin-top:8px">
+          <div style="font-size:0.9em;color:#27ae60;font-weight:bold;margin-bottom:4px">🚗 导航路线</div>
+          <div style="font-size:0.75em;color:#999">📍 ${name}</div>
+          <div style="font-size:0.85em;margin-top:6px">
+            <span style="color:#3498DB">📏 ${dist>1000?(dist/1000).toFixed(1)+'km':dist+'m'}</span>
+            <span style="margin:0 8px;color:#666">|</span>
+            <span style="color:#f39c12">⏱ ${Math.floor(time/60)}分钟</span>
+          </div>
+          <a href="https://uri.amap.com/navigation?from=${currentCenter[0]},${currentCenter[1]}&to=${lng},${lat}&mode=car&coordinate=gaode&callnative=1" target="_blank" style="display:block;margin-top:8px;padding:6px;background:#27ae60;color:#fff;text-align:center;border-radius:8px;font-size:0.85em;font-weight:bold;text-decoration:none">📍 在高德地图中导航</a>
+        </div>`;
+        panel.innerHTML=navHtml;
+        panel.scrollTop=panel.scrollHeight;
+      }else{
+        alert('路线规划失败');
+      }
+    });
+  });
+}
+</script>
+<script>initMap();</script>
+</body>
+</html>

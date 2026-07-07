@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>html5</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%230066cc'/><text x='50' y='58' text-anchor='middle' font-size='40' fill='%23fff' font-weight='bold'>🔧</text></svg>" type="image/svg+xml">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: Arial, sans-serif; height: 100vh; display: flex; flex-direction: column; }
@@ -14,9 +15,10 @@
         .tree .folder { cursor: pointer; font-weight: bold; color: #333; display: flex; align-items: center; }
         .tree .folder::before { content: '▶'; margin-right: 5px; font-size: 10px; transition: transform 0.2s; }
         .tree .folder.open::before { transform: rotate(90deg); }
-        .tree .file { color: #0066cc; cursor: pointer; padding-left: 10px; }
-        .tree .file:hover { text-decoration: underline; }
-        .tree .file::before { content: '○'; margin-right: 5px; font-size: 8px; }
+        .tree .file { color: #555; cursor: pointer; padding-left: 10px; display: flex; align-items: center; }
+        .tree .file:hover { color: #333; text-decoration: underline; }
+        .tree .file::before { content: '○'; margin-right: 6px; font-size: 8px; }
+        .tree .file.active { background: #e0e0e0; color: #333; border-radius: 4px; padding: 2px 6px; }
         .main-content { flex: 1; display: flex; flex-direction: column; background-color: #fff; }
         .content-header { padding: 15px; background-color: #fafafa; border-bottom: 1px solid #ddd; font-size: 16px; font-weight: bold; }
         iframe { flex: 1; width: 100%; border: none; background-color: #fff; }
@@ -71,6 +73,7 @@
                             <li><div class="file" onclick="openLink('生活类/算命/index.html', '算命')">🔮 算命</div></li>
                             <li><div class="file" onclick="openLink('生活类/预测/index.html', '预测')">🔯 预测</div></li>
                             <li><div class="file" onclick="openLink('生活类/相亲/xiangqin.htm', '相亲')">💕 相亲</div></li>
+                            <li><div class="file" onclick="openLink('生活类/中间地点推荐.html', '中间地点推荐')">📍 中间地点推荐</div></li>
                             <li><div class="file" onclick="openLink('生活类/person/index.html', '个人信息')">👤 个人信息</div></li>
                         </ul>
                     </li>
@@ -85,16 +88,59 @@
     <script>
         function toggleFolder(element) {
             element.classList.toggle('open');
-            const nextUl = element.nextElementSibling;
-            if (nextUl) nextUl.style.display = nextUl.style.display === 'none' ? 'block' : 'none';
+            var ul = element.nextElementSibling;
+            if (ul) ul.style.display = ul.style.display === 'none' ? 'block' : 'none';
         }
-        function openLink(url, title) {
+        function activateFile(el, url, title) {
+            document.querySelectorAll('.file').forEach(function(f){ f.classList.remove('active'); });
+            el.classList.add('active');
+            var ul = el.closest('ul');
+            if (ul) ul.style.display = 'block';
+            var folder = ul.previousElementSibling;
+            if (folder && folder.classList.contains('folder')) folder.classList.add('open');
             document.getElementById('content-title').textContent = title;
             document.getElementById('content-frame').src = url;
         }
-        document.querySelectorAll('.folder').forEach(folder => {
-            const nextUl = folder.nextElementSibling;
-            if (nextUl) nextUl.style.display = 'none';
+        function openLink(url, title) {
+            var clicked = event.target.closest('.file');
+            if (clicked) activateFile(clicked, url, title);
+            location.hash = encodeURIComponent(url) + '|' + encodeURIComponent(title);
+        }
+        function restoreState(url, title) {
+            var found = false;
+            document.querySelectorAll('.file').forEach(function(f){
+                var onclick = f.getAttribute('onclick') || '';
+                if (onclick.indexOf("'"+url+"'") !== -1) {
+                    f.classList.add('active');
+                    var ul = f.closest('ul');
+                    if (ul) ul.style.display = 'block';
+                    var folder = ul.previousElementSibling;
+                    if (folder && folder.classList.contains('folder')) folder.classList.add('open');
+                    found = true;
+                }
+            });
+            if (found) {
+                document.getElementById('content-title').textContent = title;
+                document.getElementById('content-frame').src = url;
+            }
+        }
+        window.addEventListener('load', function() {
+            if (location.hash) {
+                var parts = location.hash.substring(1).split('|');
+                var url = decodeURIComponent(parts[0]);
+                var title = decodeURIComponent(parts[1] || '');
+                if (url) restoreState(url, title);
+            }
+        });
+        window.addEventListener('hashchange', function() {
+            if (location.hash) {
+                var parts = location.hash.substring(1).split('|');
+                restoreState(decodeURIComponent(parts[0]), decodeURIComponent(parts[1] || ''));
+            }
+        });
+        document.querySelectorAll('.folder').forEach(function(folder) {
+            var ul = folder.nextElementSibling;
+            if (ul) ul.style.display = 'none';
         });
     </script>
 </body>
