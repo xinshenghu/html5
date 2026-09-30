@@ -1,135 +1,434 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <title>html5</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%230066cc'/><text x='50' y='58' text-anchor='middle' font-size='40' fill='%23fff' font-weight='bold'>🔧</text></svg>" type="image/svg+xml">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; height: 100vh; display: flex; flex-direction: column; }
-        header { background-color: #333; color: white; padding: 20px; text-align: center; font-size: 24px; font-weight: bold; }
-        .container { display: flex; flex: 1; overflow: hidden; }
-        .sidebar { width: 280px; background-color: #f5f5f5; border-right: 1px solid #ddd; overflow-y: auto; padding: 15px; }
-        .tree ul { list-style: none; padding-left: 15px; }
-        .tree li { margin: 5px 0; }
-        .tree .folder { cursor: pointer; font-weight: bold; color: #333; display: flex; align-items: center; }
-        .tree .folder::before { content: '▶'; margin-right: 5px; font-size: 10px; transition: transform 0.2s; }
-        .tree .folder.open::before { transform: rotate(90deg); }
-        .tree .file { color: #555; cursor: pointer; padding-left: 10px; display: flex; align-items: center; }
-        .tree .file:hover { color: #333; text-decoration: underline; }
-        .tree .file::before { content: '○'; margin-right: 6px; font-size: 8px; }
-        .tree .file.active { background: #e0e0e0; color: #333; border-radius: 4px; padding: 2px 6px; }
-        .main-content { flex: 1; display: flex; flex-direction: column; background-color: #fff; }
-        .content-header { padding: 15px; background-color: #fafafa; border-bottom: 1px solid #ddd; font-size: 16px; font-weight: bold; }
-        iframe { flex: 1; width: 100%; border: none; background-color: #fff; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HTML5 应用作品集</title>
+<meta name="description" content="30+ 原生 HTML5/CSS3/JavaScript 应用合集：Canvas 2D 游戏、浏览器工具、内容站点，零框架依赖，桌面与手机浏览器直接运行。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%232563eb'/><text x='50' y='66' text-anchor='middle' font-size='52' fill='%23fff' font-family='Arial' font-weight='bold'>H5</text></svg>">
+<style>
+:root{
+  --ink:#0f172a; --sub:#475569; --muted:#94a3b8; --line:#e2e8f0;
+  --bg:#f8fafc; --card:#fff; --brand:#2563eb; --brand-d:#1d4ed8;
+  --amber:#f59e0b; --green:#10b981; --rose:#f43f5e; --violet:#8b5cf6;
+  --shadow:0 1px 3px rgba(15,23,42,.08),0 8px 24px -12px rgba(15,23,42,.15);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  color:var(--ink);background:var(--bg);line-height:1.6;-webkit-font-smoothing:antialiased}
+a{text-decoration:none;color:inherit}
+
+/* ---------- 顶部导航 ---------- */
+.topbar{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.88);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line)}
+.topbar-in{max-width:1080px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:16px}
+.logo{font-weight:800;font-size:17px;letter-spacing:.3px;display:flex;align-items:center;gap:8px}
+.logo b{background:var(--brand);color:#fff;border-radius:7px;padding:2px 7px;font-size:13px;font-weight:800}
+.topbar .sp{flex:1}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:#fff;color:var(--ink);
+  padding:7px 14px;border-radius:9px;font-size:13.5px;font-weight:600;cursor:pointer;transition:.15s;white-space:nowrap}
+.btn:hover{border-color:var(--brand);color:var(--brand);box-shadow:var(--shadow)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.primary:hover{background:var(--brand-d);color:#fff}
+
+/* ---------- Hero ---------- */
+.hero{max-width:1080px;margin:0 auto;padding:64px 20px 40px}
+.kicker{display:inline-flex;align-items:center;gap:8px;background:#eff6ff;color:var(--brand-d);
+  font-size:13px;font-weight:700;padding:6px 13px;border-radius:999px;border:1px solid #bfdbfe}
+.hero h1{font-size:clamp(28px,5vw,44px);line-height:1.25;margin:18px 0 14px;font-weight:800;letter-spacing:-.5px}
+.hero h1 em{font-style:normal;color:var(--brand)}
+.hero p.lead{font-size:clamp(15px,2.2vw,17.5px);color:var(--sub);max-width:720px}
+.stack{display:flex;flex-wrap:wrap;gap:8px;margin:22px 0 26px}
+.pill{font-size:12.5px;font-weight:600;color:#334155;background:#fff;border:1px solid var(--line);
+  padding:5px 12px;border-radius:999px}
+.hero-actions{display:flex;flex-wrap:wrap;gap:12px}
+.stats{display:flex;flex-wrap:wrap;gap:36px;margin-top:44px;padding-top:28px;border-top:1px dashed var(--line)}
+.stat b{font-size:28px;font-weight:800;display:block;color:var(--ink)}
+.stat span{font-size:13px;color:var(--muted)}
+
+/* ---------- 分区 ---------- */
+.section{max-width:1080px;margin:0 auto;padding:26px 20px;scroll-margin-top:72px}
+#top{scroll-margin-top:72px}
+.sec-head{display:flex;align-items:baseline;gap:12px;margin:18px 0 18px}
+.sec-head h2{font-size:22px;font-weight:800}
+.sec-head .tip{font-size:13px;color:var(--muted)}
+
+.grid{display:grid;gap:16px}
+.grid.feat{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+.grid.all{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;
+  display:flex;flex-direction:column;gap:10px;transition:.18s;position:relative;overflow:hidden}
+.card:hover{transform:translateY(-3px);box-shadow:var(--shadow);border-color:#cbd5e1}
+.card .ico{font-size:30px;line-height:1}
+.card h3{font-size:16.5px;font-weight:700;display:flex;align-items:center;gap:8px}
+.card p{font-size:13.5px;color:var(--sub);flex:1}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{font-size:11.5px;color:#475569;background:#f1f5f9;border-radius:6px;padding:2px 8px;font-weight:600}
+.card .go{font-size:13px;font-weight:700;color:var(--brand);display:flex;align-items:center;gap:4px}
+.card:hover .go{gap:8px}
+.card .go,.card .go span{transition:.18s}
+.badge{position:absolute;top:12px;right:-30px;transform:rotate(45deg);background:var(--amber);color:#fff;
+  font-size:10.5px;font-weight:700;padding:3px 34px;letter-spacing:1px}
+.badge.blue{background:var(--brand)}
+
+/* 小条目列表卡 */
+.mini{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.mini h3{font-size:15px;font-weight:800;margin-bottom:12px;display:flex;align-items:center;gap:7px}
+.mini ul{list-style:none;display:flex;flex-direction:column;gap:9px}
+.mini li a{display:flex;align-items:center;gap:9px;font-size:13.5px;color:#334155;padding:4px 6px;border-radius:8px;transition:.12s}
+.mini li a:hover{background:#eff6ff;color:var(--brand-d)}
+.mini .e{font-size:15px;width:20px;text-align:center}
+
+/* 分类标题色条 */
+.mini.games h3{color:var(--rose)}
+.mini.tools h3{color:var(--brand)}
+.mini.books h3{color:var(--violet)}
+.mini.life h3{color:var(--green)}
+
+/* ---------- 页脚 ---------- */
+footer{border-top:1px solid var(--line);margin-top:40px;background:#fff}
+.foot-in{max-width:1080px;margin:0 auto;padding:26px 20px;display:flex;flex-wrap:wrap;gap:10px 24px;
+  align-items:center;font-size:13.5px;color:var(--sub)}
+.foot-in b{color:var(--ink)}
+.foot-in a{color:var(--brand);font-weight:600}
+
+/* ---------- 经典树状浏览视图 ---------- */
+#classic-view{display:none;height:100vh;height:100dvh;flex-direction:column}
+body.classic{overflow:hidden}
+body.classic #home-view{display:none}
+body.classic #classic-view{display:flex}
+.cv-header{background:var(--ink);color:#fff;padding:14px 20px;display:flex;align-items:center;gap:14px}
+.cv-header .t{font-size:17px;font-weight:800;flex:1}
+.cv-header .btn{background:transparent;color:#e2e8f0;border-color:#334155}
+.cv-header .btn:hover{border-color:#fff;color:#fff}
+.cv-body{display:flex;flex:1;overflow:hidden}
+.cv-side{width:280px;background:#f5f5f5;border-right:1px solid var(--line);overflow-y:auto;padding:15px;flex-shrink:0}
+.tree ul{list-style:none;padding-left:15px}
+.tree li{margin:5px 0}
+.tree .folder{cursor:pointer;font-weight:700;color:#334155;display:flex;align-items:center}
+.tree .folder::before{content:'▶';margin-right:6px;font-size:10px;transition:transform .2s}
+.tree .folder.open::before{transform:rotate(90deg)}
+.tree .file{color:#475569;cursor:pointer;padding:3px 8px;display:flex;align-items:center;border-radius:6px;font-size:14px}
+.tree .file:hover{background:#e2e8f0}
+.tree .file::before{content:'○';margin-right:7px;font-size:8px}
+.tree .file.active{background:#dbeafe;color:var(--brand-d);font-weight:600}
+.cv-main{flex:1;display:flex;flex-direction:column;min-width:0}
+.cv-bar{padding:10px 16px;background:#fafafa;border-bottom:1px solid var(--line);font-size:14.5px;font-weight:700;
+  display:flex;align-items:center;gap:10px}
+.cv-bar span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cv-tree-toggle{display:none;padding:5px 12px;font-size:13px}
+#content-frame{flex:1;width:100%;border:none;background:#fff}
+
+@media(max-width:640px){
+  .hero{padding:40px 16px 24px}
+  .section{padding:18px 16px}
+  .stats{gap:22px}
+  .topbar-in{padding:10px 14px}
+  .logo span.sub{display:none}
+  /* 经典视图：手机端上下布局，文件树可折叠 */
+  .cv-body{flex-direction:column}
+  .cv-side{width:100%;max-height:42vh;border-right:none;border-bottom:1px solid var(--line);flex-shrink:0}
+  .cv-side.collapsed{display:none}
+  .cv-tree-toggle{display:inline-flex}
+  .cv-header{padding:12px 14px;gap:10px}
+  .cv-header .t{font-size:15px}
+  .cv-header .btn{padding:7px 10px;font-size:12.5px}
+}
+</style>
 </head>
 <body>
-    <header>html5</header>
-    <div class="container">
-        <div class="sidebar">
-            <div class="tree">
-                <ul>
-                    <li>
-                        <div class="folder" onclick="toggleFolder(this)">🔧 工具类</div>
-                        <ul>
-                            <li><div class="file" onclick="openLink('工具类/tools/luping.html', '录屏')">📹 录屏</div></li>
-                            <li><div class="file" onclick="openLink('工具类/tools/tianqi/index.html', '天气')">☀️ 天气</div></li>
-                            <li><div class="file" onclick="openLink('工具类/地点推荐.html', '地点推荐')">🔍 地点推荐</div></li>
-                            <li><div class="file" onclick="openLink('生活类/中间地点推荐.html', '中间地点推荐')">📍 中间地点推荐</div></li>
-                        </ul>
-                    </li>
-                    <li>
-                        <div class="folder" onclick="toggleFolder(this)">🎮 游戏类</div>
-                        <ul>
-                            <li><div class="file" onclick="openLink('娱乐类/games/shooter/index.html', '打飞机')">🎮 打飞机</div></li>
-                            <li><div class="file" onclick="openLink('娱乐类/games/fanzhuanpintu/index.html', '拼图')">🧩 拼图</div></li>
-                            <li><div class="file" onclick="openLink('娱乐类/games/snake/index.html', '贪吃蛇')">🐍 贪吃蛇</div></li>
-                            <li><div class="file" onclick="openLink('娱乐类/games/minesweeper/index.html', '扫雷')">💣 扫雷</div></li>
-                            <li><div class="file" onclick="openLink('娱乐类/games/match3/index.html', '消消乐')">🔮 消消乐</div></li>
-                            <li><div class="file" onclick="openLink('娱乐类/games/sudoku/index.html', '数独')">🔢 数独</div></li>
-                            <li><div class="file" onclick="openLink('娱乐类/games/frog/index.html', '青蛙过河')">🐸 青蛙过河</div></li>
-                            <li><div class="file" onclick="openLink('娱乐类/打地鼠/index.html', '打地鼠')">🎯 打地鼠</div></li>
-                            <li><div class="file" onclick="openLink('娱乐类/华容道/index.html', '华容道')">🏯 华容道</div></li>
-                            <li><div class="file" onclick="openLink('娱乐类/满堂红/index.html', '满堂红')">🀄 满堂红</div></li>
-                        </ul>
-                    </li>
-                    <li>
-                        <div class="folder" onclick="toggleFolder(this)">📚 内容类</div>
-                        <ul>
-                            <li><div class="file" onclick="openLink('内容类/诗词/index.htm', '诗词')">📜 诗词</div></li>
-                            <li><div class="file" onclick="openLink('内容类/小说/index.html', '小说')">📖 小说</div></li>
-                            <li><div class="file" onclick="openLink('内容类/西游记/xiyouji.htm', '西游记')">🐵 西游记</div></li>
-                            <li><div class="file" onclick="openLink('内容类/英语/index.html', '英语')">🔤 英语</div></li>
-                            <li><div class="file" onclick="openLink('内容类/论语/index.html', '论语')">📖 论语</div></li>
-                            <li><div class="file" onclick="openLink('内容类/内容/长安模板/index.html', '长安模板')">🏯 长安模板</div></li>
-                        </ul>
-                    </li>
-                    <li>
-                        <div class="folder" onclick="toggleFolder(this)">🏃 生活类</div>
-                        <ul>
-                            <li><div class="file" onclick="openLink('生活类/吃饭/eat.htm', '吃饭')">🍚 吃饭</div></li>
-                            <li><div class="file" onclick="openLink('生活类/吃饭/diet.html', '饮食')">🥗 饮食</div></li>
-                            <li><div class="file" onclick="openLink('生活类/吃饭/exercise.html', '运动')">💪 运动</div></li>
-                            <li><div class="file" onclick="openLink('生活类/舞蹈/index.html', '舞蹈')">💃 舞蹈</div></li>
-                            <li><div class="file" onclick="openLink('生活类/算命/index.html', '算命')">🔮 算命</div></li>
-                            <li><div class="file" onclick="openLink('生活类/预测/index.html', '预测')">🔯 预测</div></li>
-                            <li><div class="file" onclick="openLink('生活类/相亲/xiangqin.htm', '相亲')">💕 相亲</div></li>
-                            <li><div class="file" onclick="openLink('生活类/person/index.html', '个人信息')">👤 个人信息</div></li>
-                        </ul>
-                    </li>
-                </ul>
-            </div>
-        </div>
-        <div class="main-content">
-            <div class="content-header" id="content-title">选择一个项目开始浏览</div>
-            <iframe id="content-frame" src="" frameborder="0"></iframe>
-        </div>
+
+<!-- ============ 作品集首页 ============ -->
+<div id="home-view">
+
+  <nav class="topbar">
+    <div class="topbar-in">
+      <a class="logo" href="#top"><b>H5</b><span class="sub">HTML5 应用作品集</span></a>
+      <span class="sp"></span>
+      <a class="btn" href="https://github.com/xinshenghu/html5" target="_blank" rel="noopener">📦 GitHub 源码</a>
+      <button class="btn" onclick="showClassic()">🗂️ 树状浏览全部</button>
     </div>
-    <script>
-        function fileId(url) { return 'nav_' + url.replace(/[^a-z0-9]/gi,'_'); }
-        function toggleFolder(element) {
-            element.classList.toggle('open');
-            var ul = element.nextElementSibling;
-            if (ul) ul.style.display = ul.style.display === 'none' ? 'block' : 'none';
-        }
-        function activateFile(el, url, title) {
-            document.querySelectorAll('.file').forEach(function(f){ f.classList.remove('active'); });
-            el.classList.add('active');
-            var ul = el.closest('ul');
-            if (ul) ul.style.display = 'block';
-            var folder = ul.previousElementSibling;
-            if (folder && folder.classList.contains('folder')) folder.classList.add('open');
-            document.getElementById('content-title').textContent = title;
-            document.getElementById('content-frame').src = url;
-        }
-        function openLink(url, title) {
-            var clicked = event.target.closest('.file');
-            if (clicked) activateFile(clicked, url, title);
-            location.hash = '#' + fileId(url);
-        }
-        function restoreFromHash() {
-            if (!location.hash) return;
-            var id = location.hash.substring(1);
-            var el = document.getElementById(id);
-            if (!el) return;
-            var onclick = el.getAttribute('onclick') || '';
-            var m = onclick.match(/openLink\('([^']+)',\s*'([^']+)'\)/);
-            if (m) activateFile(el, m[1], m[2]);
-        }
-        window.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('.file').forEach(function(f){
-                var onclick = f.getAttribute('onclick') || '';
-                var m = onclick.match(/openLink\('([^']+)'/);
-                if (m) f.id = fileId(m[1]);
-            });
-            document.querySelectorAll('.folder').forEach(function(folder) {
-                var ul = folder.nextElementSibling;
-                if (ul) ul.style.display = 'none';
-            });
-            restoreFromHash();
-        });
-        window.addEventListener('hashchange', restoreFromHash);
-    </script>
+  </nav>
+
+  <header class="hero" id="top">
+    <span class="kicker">🧑‍💻 个人独立开发作品集 · 持续更新</span>
+    <h1>30+ 个<em>零框架依赖</em>的<br>原生 HTML5 应用与游戏</h1>
+    <p class="lead">全部手写 HTML5 + CSS3 + JavaScript（ES6+）：自研 Canvas 2D 单文件游戏引擎、浏览器 API 工具、
+      移动端触屏交互。无需构建、无需安装，桌面与手机浏览器打开即玩即用，托管于 GitHub Pages。</p>
+    <div class="stack">
+      <span class="pill">HTML5</span><span class="pill">CSS3</span><span class="pill">JavaScript ES6+</span>
+      <span class="pill">Canvas 2D</span><span class="pill">响应式 / 触屏</span>
+      <span class="pill">MediaRecorder API</span><span class="pill">LocalStorage</span>
+      <span class="pill">GitHub Pages / CI</span>
+    </div>
+    <div class="hero-actions">
+      <a class="btn primary" href="#featured">🎮 体验精选作品</a>
+      <a class="btn" href="#all">📚 浏览全部项目</a>
+    </div>
+    <div class="stats">
+      <div class="stat"><b>30+</b><span>在线应用</span></div>
+      <div class="stat"><b>12</b><span>可玩游戏</span></div>
+      <div class="stat"><b>0</b><span>框架 / 构建依赖</span></div>
+      <div class="stat"><b>100%</b><span>浏览器直接运行</span></div>
+    </div>
+  </header>
+
+  <!-- 精选代表作 -->
+  <section class="section" id="featured">
+    <div class="sec-head"><h2>⭐ 精选代表作</h2><span class="tip">工程复杂度最高 / 最能体现独立交付能力的 6 个</span></div>
+    <div class="grid feat">
+
+      <a class="card" href="娱乐类/games/smallgame/index.html" target="_blank" rel="noopener">
+        <span class="badge">引擎</span>
+        <div class="ico">🕹️</div>
+        <h3>六关小游戏合集</h3>
+        <p>自研 Canvas 2D 单文件游戏引擎：关卡选择、计分、触屏控制、状态可重置，6 个游戏共用一套底层。后作为微信小游戏上架素材。</p>
+        <div class="tags"><span class="tag">Canvas 2D</span><span class="tag">单文件引擎</span><span class="tag">触屏</span></div>
+        <span class="go">在线体验 <span>→</span></span>
+      </a>
+
+      <a class="card" href="娱乐类/games/minesweeper/index.html" target="_blank" rel="noopener">
+        <span class="badge blue">交付级</span>
+        <div class="ico">💣</div>
+        <h3>扫雷</h3>
+        <p>移动端交互重设计：短按挖雷、长按插旗（替代右键），模式切换、胜负判定与完全可重开的状态闭环。</p>
+        <div class="tags"><span class="tag">手势区分</span><span class="tag">竖屏适配</span><span class="tag">状态机</span></div>
+        <span class="go">在线体验 <span>→</span></span>
+      </a>
+
+      <a class="card" href="娱乐类/games/match3/index.html" target="_blank" rel="noopener">
+        <span class="badge blue">交付级</span>
+        <div class="ico">🔮</div>
+        <h3>消消乐</h3>
+        <p>三消核心算法：横纵三连匹配、交换消除、列下落与顶部补充的连锁循环结算，达成目标分胜利。</p>
+        <div class="tags"><span class="tag">匹配算法</span><span class="tag">连锁结算</span></div>
+        <span class="go">在线体验 <span>→</span></span>
+      </a>
+
+      <a class="card" href="娱乐类/games/snake/index.html" target="_blank" rel="noopener">
+        <span class="badge blue">交付级</span>
+        <div class="ico">🐍</div>
+        <h3>贪吃蛇</h3>
+        <p>经典 Canvas 游戏：定速游戏循环、撞墙与咬尾判定、吃食生长，键盘方向键 + 触屏滑动双操控。</p>
+        <div class="tags"><span class="tag">Canvas</span><span class="tag">游戏循环</span></div>
+        <span class="go">在线体验 <span>→</span></span>
+      </a>
+
+      <a class="card" href="娱乐类/games/frog/index.html" target="_blank" rel="noopener">
+        <span class="badge blue">交付级</span>
+        <div class="ico">🐸</div>
+        <h3>青蛙过河</h3>
+        <p>经典青蛙换位谜题：7 石 3 对 3，合法跳步判定（移入相邻空位或跳过一只对向蛙）、步数统计与一键重开。</p>
+        <div class="tags"><span class="tag">规则引擎</span><span class="tag">状态机</span></div>
+        <span class="go">在线体验 <span>→</span></span>
+      </a>
+
+      <a class="card" href="工具类/tools/luping.html" target="_blank" rel="noopener">
+        <span class="badge">API</span>
+        <div class="ico">📹</div>
+        <h3>浏览器录屏工具</h3>
+        <p>基于 MediaRecorder / getDisplayMedia API：屏幕/窗口/标签页录制，实时计时与 WebM 下载，纯前端零后端。</p>
+        <div class="tags"><span class="tag">MediaRecorder</span><span class="tag">零后端</span></div>
+        <span class="go">在线体验 <span>→</span></span>
+      </a>
+
+    </div>
+  </section>
+
+  <!-- 全部项目 -->
+  <section class="section" id="all">
+    <div class="sec-head"><h2>📚 全部项目</h2><span class="tip">四大分类，点击直达</span></div>
+    <div class="grid all">
+
+      <div class="mini games">
+        <h3>🎮 游戏娱乐（12）</h3>
+        <ul>
+          <li><a href="娱乐类/games/smallgame/index.html" target="_blank"><span class="e">🕹️</span>六关小游戏合集（Canvas 引擎）</a></li>
+          <li><a href="娱乐类/games/minesweeper/index.html" target="_blank"><span class="e">💣</span>扫雷</a></li>
+          <li><a href="娱乐类/games/match3/index.html" target="_blank"><span class="e">🔮</span>消消乐</a></li>
+          <li><a href="娱乐类/games/snake/index.html" target="_blank"><span class="e">🐍</span>贪吃蛇</a></li>
+          <li><a href="娱乐类/games/frog/index.html" target="_blank"><span class="e">🐸</span>青蛙过河</a></li>
+          <li><a href="娱乐类/打地鼠/index.html" target="_blank"><span class="e">🎯</span>打地鼠</a></li>
+          <li><a href="娱乐类/games/sudoku/index.html" target="_blank"><span class="e">🔢</span>数独</a></li>
+          <li><a href="娱乐类/华容道/index.html" target="_blank"><span class="e">🏯</span>华容道</a></li>
+          <li><a href="娱乐类/满堂红/index.html" target="_blank"><span class="e">🀄</span>满堂红（配对消除）</a></li>
+          <li><a href="娱乐类/games/fanzhuanpintu/index.html" target="_blank"><span class="e">🧩</span>翻转拼图</a></li>
+          <li><a href="娱乐类/games/sliding-puzzle/index.html" target="_blank"><span class="e">🖼️</span>滑块拼图</a></li>
+          <li><a href="娱乐类/games/shooter/index.html" target="_blank"><span class="e">✈️</span>打飞机</a></li>
+        </ul>
+      </div>
+
+      <div class="mini tools">
+        <h3>🔧 实用工具（6）</h3>
+        <ul>
+          <li><a href="工具类/tools/luping.html" target="_blank"><span class="e">📹</span>屏幕录制（MediaRecorder）</a></li>
+          <li><a href="工具类/tools/tianqi/index.html" target="_blank"><span class="e">☀️</span>天气预报（第三方 API）</a></li>
+          <li><a href="工具类/tools/nature-sounds/index.html" target="_blank"><span class="e">🍃</span>自然之声（8 音效混音）</a></li>
+          <li><a href="工具类/tools/soft-murmur/index.html" target="_blank"><span class="e">🌙</span>轻语（白噪音混音 · WebAudio 合成）</a></li>
+          <li><a href="工具类/地点推荐.html" target="_blank"><span class="e">🔍</span>地点推荐</a></li>
+          <li><a href="生活类/中间地点推荐.html" target="_blank"><span class="e">📍</span>中间地点推荐</a></li>
+        </ul>
+      </div>
+
+      <div class="mini books">
+        <h3>📖 内容站点（6）</h3>
+        <ul>
+          <li><a href="内容类/诗词/index.htm" target="_blank"><span class="e">📜</span>古典诗词展示</a></li>
+          <li><a href="内容类/小说/index.html" target="_blank"><span class="e">📕</span>个人小说阅读</a></li>
+          <li><a href="内容类/西游记/xiyouji.htm" target="_blank"><span class="e">🐵</span>西游记</a></li>
+          <li><a href="内容类/论语/index.html" target="_blank"><span class="e">📖</span>论语</a></li>
+          <li><a href="内容类/英语/index.html" target="_blank"><span class="e">🔤</span>英语学习</a></li>
+          <li><a href="内容类/内容/长安模板/index.html" target="_blank"><span class="e">🏯</span>古风网页模板</a></li>
+        </ul>
+      </div>
+
+      <div class="mini life">
+        <h3>🏃 生活服务（8）</h3>
+        <ul>
+          <li><a href="生活类/吃饭/eat.htm" target="_blank"><span class="e">🍚</span>吃饭</a></li>
+          <li><a href="生活类/吃饭/diet.html" target="_blank"><span class="e">🥗</span>饮食管理</a></li>
+          <li><a href="生活类/吃饭/exercise.html" target="_blank"><span class="e">💪</span>运动记录</a></li>
+          <li><a href="生活类/舞蹈/index.html" target="_blank"><span class="e">💃</span>舞蹈培训（多页站）</a></li>
+          <li><a href="生活类/相亲/xiangqin.htm" target="_blank"><span class="e">💕</span>相亲平台（注册/列表）</a></li>
+          <li><a href="生活类/算命/index.html" target="_blank"><span class="e">🔮</span>算命</a></li>
+          <li><a href="生活类/预测/index.html" target="_blank"><span class="e">🔯</span>星座面相预测</a></li>
+          <li><a href="生活类/person/index.html" target="_blank"><span class="e">👤</span>个人主页</a></li>
+        </ul>
+      </div>
+
+    </div>
+  </section>
+
+  <footer>
+    <div class="foot-in">
+      <b>独立开发者</b><span>20 年后端/架构 · 2024 年起独立交付 Web 与 AI 应用</span>
+      <span class="sp" style="flex:1"></span>
+      <a href="https://github.com/xinshenghu/html5" target="_blank" rel="noopener">github.com/xinshenghu</a>
+      <button class="btn" onclick="showClassic()">🗂️ 切换经典树状导航</button>
+    </div>
+  </footer>
+</div>
+
+<!-- ============ 经典树状浏览（保留原导航） ============ -->
+<div id="classic-view">
+  <div class="cv-header">
+    <button class="btn" onclick="showHome()">← 返回作品集</button>
+    <span class="t">html5 · 树状浏览</span>
+    <a class="btn" href="https://github.com/xinshenghu/html5" target="_blank" rel="noopener">GitHub</a>
+  </div>
+  <div class="cv-body">
+    <div class="cv-side">
+      <div class="tree">
+        <ul>
+          <li>
+            <div class="folder" onclick="toggleFolder(this)">🔧 工具类</div>
+            <ul>
+              <li><div class="file" onclick="openLink('工具类/tools/luping.html', '录屏')">📹 录屏</div></li>
+              <li><div class="file" onclick="openLink('工具类/tools/tianqi/index.html', '天气')">☀️ 天气</div></li>
+              <li><div class="file" onclick="openLink('工具类/tools/nature-sounds/index.html', '自然之声')">🍃 自然之声</div></li>
+              <li><div class="file" onclick="openLink('工具类/tools/soft-murmur/index.html', '轻语')">🌙 轻语</div></li>
+              <li><div class="file" onclick="openLink('工具类/地点推荐.html', '地点推荐')">🔍 地点推荐</div></li>
+              <li><div class="file" onclick="openLink('生活类/中间地点推荐.html', '中间地点推荐')">📍 中间地点推荐</div></li>
+            </ul>
+          </li>
+          <li>
+            <div class="folder" onclick="toggleFolder(this)">🎮 游戏类</div>
+            <ul>
+              <li><div class="file" onclick="openLink('娱乐类/games/smallgame/index.html', '六关小游戏合集')">🕹️ 小游戏合集</div></li>
+              <li><div class="file" onclick="openLink('娱乐类/games/shooter/index.html', '打飞机')">✈️ 打飞机</div></li>
+              <li><div class="file" onclick="openLink('娱乐类/games/fanzhuanpintu/index.html', '翻转拼图')">🧩 翻转拼图</div></li>
+              <li><div class="file" onclick="openLink('娱乐类/games/sliding-puzzle/index.html', '滑块拼图')">🖼️ 滑块拼图</div></li>
+              <li><div class="file" onclick="openLink('娱乐类/games/snake/index.html', '贪吃蛇')">🐍 贪吃蛇</div></li>
+              <li><div class="file" onclick="openLink('娱乐类/games/minesweeper/index.html', '扫雷')">💣 扫雷</div></li>
+              <li><div class="file" onclick="openLink('娱乐类/games/match3/index.html', '消消乐')">🔮 消消乐</div></li>
+              <li><div class="file" onclick="openLink('娱乐类/games/sudoku/index.html', '数独')">🔢 数独</div></li>
+              <li><div class="file" onclick="openLink('娱乐类/games/frog/index.html', '青蛙过河')">🐸 青蛙过河</div></li>
+              <li><div class="file" onclick="openLink('娱乐类/打地鼠/index.html', '打地鼠')">🎯 打地鼠</div></li>
+              <li><div class="file" onclick="openLink('娱乐类/华容道/index.html', '华容道')">🏯 华容道</div></li>
+              <li><div class="file" onclick="openLink('娱乐类/满堂红/index.html', '满堂红')">🀄 满堂红</div></li>
+            </ul>
+          </li>
+          <li>
+            <div class="folder" onclick="toggleFolder(this)">📚 内容类</div>
+            <ul>
+              <li><div class="file" onclick="openLink('内容类/诗词/index.htm', '诗词')">📜 诗词</div></li>
+              <li><div class="file" onclick="openLink('内容类/小说/index.html', '小说')">📕 小说</div></li>
+              <li><div class="file" onclick="openLink('内容类/西游记/xiyouji.htm', '西游记')">🐵 西游记</div></li>
+              <li><div class="file" onclick="openLink('内容类/英语/index.html', '英语')">🔤 英语</div></li>
+              <li><div class="file" onclick="openLink('内容类/论语/index.html', '论语')">📖 论语</div></li>
+              <li><div class="file" onclick="openLink('内容类/内容/长安模板/index.html', '长安模板')">🏯 长安模板</div></li>
+            </ul>
+          </li>
+          <li>
+            <div class="folder" onclick="toggleFolder(this)">🏃 生活类</div>
+            <ul>
+              <li><div class="file" onclick="openLink('生活类/吃饭/eat.htm', '吃饭')">🍚 吃饭</div></li>
+              <li><div class="file" onclick="openLink('生活类/吃饭/diet.html', '饮食')">🥗 饮食</div></li>
+              <li><div class="file" onclick="openLink('生活类/吃饭/exercise.html', '运动')">💪 运动</div></li>
+              <li><div class="file" onclick="openLink('生活类/舞蹈/index.html', '舞蹈')">💃 舞蹈</div></li>
+              <li><div class="file" onclick="openLink('生活类/算命/index.html', '算命')">🔮 算命</div></li>
+              <li><div class="file" onclick="openLink('生活类/预测/index.html', '预测')">🔯 预测</div></li>
+              <li><div class="file" onclick="openLink('生活类/相亲/xiangqin.htm', '相亲')">💕 相亲</div></li>
+              <li><div class="file" onclick="openLink('生活类/person/index.html', '个人信息')">👤 个人信息</div></li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+    <div class="cv-main">
+      <div class="cv-bar"><span id="content-title">选择一个项目开始浏览</span><button class="btn cv-tree-toggle" type="button" onclick="toggleSide()">📂 目录</button></div>
+      <iframe id="content-frame" src="" title="项目预览"></iframe>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ---------- 视图切换 ---------- */
+function showClassic(){
+  document.body.classList.add('classic');
+  document.querySelector('.cv-side').classList.remove('collapsed');
+  history.replaceState(null,'','#browse');
+}
+function toggleSide(){
+  document.querySelector('.cv-side').classList.toggle('collapsed');
+}
+function showHome(){
+  document.body.classList.remove('classic');
+  history.replaceState(null,'','#top');
+}
+if(location.hash === '#browse') document.body.classList.add('classic');
+
+/* ---------- 经典树逻辑 ---------- */
+function fileId(url){ return 'nav_' + url.replace(/[^a-z0-9]/gi,'_'); }
+function toggleFolder(element){
+  element.classList.toggle('open');
+  var ul = element.nextElementSibling;
+  if(ul) ul.style.display = ul.style.display === 'none' ? 'block' : 'none';
+}
+function activateFile(el, url, title){
+  document.querySelectorAll('.tree .file').forEach(function(f){ f.classList.remove('active'); });
+  el.classList.add('active');
+  var ul = el.closest('ul');
+  if(ul){ ul.style.display = 'block'; var fo = ul.previousElementSibling; if(fo && fo.classList.contains('folder')) fo.classList.add('open'); }
+  document.getElementById('content-title').textContent = title;
+  document.getElementById('content-frame').src = url;
+  /* 手机端选完项目自动收起目录，让 iframe 全屏显示 */
+  if(window.matchMedia('(max-width:640px)').matches){
+    document.querySelector('.cv-side').classList.add('collapsed');
+  }
+}
+function openLink(url, title){
+  var clicked = event.target.closest('.file');
+  if(clicked) activateFile(clicked, url, title);
+}
+window.addEventListener('DOMContentLoaded', function(){
+  document.querySelectorAll('#classic-view .folder').forEach(function(folder){
+    var ul = folder.nextElementSibling;
+    if(ul) ul.style.display = 'none';
+  });
+});
+</script>
 </body>
 </html>

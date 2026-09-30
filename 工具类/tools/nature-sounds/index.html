@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>自然之声 · 自然音效混音</title>
+<meta name="description" content="8 种自然音效混音：雨声、溪流、风声、篝火、海浪、鸟鸣、落雪、晚风，支持 3 路同时播放、独立音量、总音量、定时关闭、4 套主题背景。">
+<style>
+:root{
+  --ink:#0f172a; --sub:#94a3b8; --line:rgba(255,255,255,.15);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;color:#fff;overflow:hidden}
+a{text-decoration:none;color:inherit}
+
+/* ---------- 背景层 ---------- */
+.bg-layer{position:fixed;inset:0;z-index:-2;transition:background .8s ease}
+.bg-mask{position:fixed;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(0,0,0,.15) 0%,rgba(0,0,0,.35) 100%)}
+
+/* ---------- 导航 ---------- */
+.nav-bar{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;position:relative;z-index:5}
+.nav-title{font-size:19px;font-weight:800;letter-spacing:1px;text-shadow:0 1px 4px rgba(0,0,0,.3)}
+.nav-right{display:flex;gap:10px}
+.nav-btn{width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.12);backdrop-filter:blur(6px);
+  display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer;border:1px solid rgba(255,255,255,.1);
+  position:relative;transition:.15s}
+.nav-btn:hover{background:rgba(255,255,255,.22)}
+.nav-btn.active{background:rgba(96,165,250,.35);border-color:rgba(96,165,250,.6)}
+.timer-count{position:absolute;bottom:-2px;right:-2px;font-size:9px;background:#ef4444;color:#fff;
+  border-radius:8px;padding:1px 5px;font-weight:700}
+
+/* ---------- 内容滚动区 ---------- */
+.scroll-wrap{height:calc(100% - 66px - 130px);overflow-y:auto;padding:0 14px 20px;-webkit-overflow-scrolling:touch}
+.scroll-wrap::-webkit-scrollbar{width:0}
+.header-tip{display:flex;align-items:center;justify-content:space-between;padding:8px 4px 14px;font-size:13px;color:rgba(255,255,255,.8)}
+.header-tip .count-num{font-weight:800;color:#fbbf24;font-size:15px}
+
+.sound-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.sound-card{background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.12);
+  border-radius:16px;padding:14px 12px;cursor:pointer;transition:.2s;position:relative;overflow:hidden;
+  display:flex;flex-direction:column;gap:6px}
+.sound-card:hover{background:rgba(255,255,255,.14)}
+.sound-card.active{background:rgba(255,255,255,.16);border-color:var(--card-color);box-shadow:0 0 0 1px var(--card-color),0 8px 24px -8px var(--card-color)}
+.sound-card.active::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--card-color)}
+.card-icon{font-size:30px;line-height:1}
+.card-name{font-size:15px;font-weight:700}
+.card-desc{font-size:12px;color:rgba(255,255,255,.6);line-height:1.4}
+.card-state{display:flex;align-items:center;gap:6px;font-size:11.5px;color:rgba(255,255,255,.5)}
+.sound-card.active .card-state{color:var(--card-color)}
+.state-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.3)}
+.sound-card.active .state-dot{background:var(--card-color);box-shadow:0 0 6px var(--card-color);animation:pulse 1.2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.vol-row{display:flex;align-items:center;gap:8px;margin-top:6px}
+.vol-label{font-size:12px;opacity:.7}
+.vol-slider{flex:1;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;
+  background:rgba(255,255,255,.2);outline:none;cursor:pointer}
+.vol-slider::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+  background:#fff;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.vol-slider::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#fff;cursor:pointer;border:none}
+
+/* ---------- 底部 Dock ---------- */
+.dock{position:fixed;bottom:0;left:0;right:0;background:rgba(15,23,42,.85);backdrop-filter:blur(12px);
+  border-top:1px solid rgba(255,255,255,.1);padding:12px 16px calc(12px + env(safe-area-inset-bottom));z-index:10}
+.dock-row{display:flex;align-items:center;gap:12px}
+.master-row{margin-bottom:12px}
+.master-label{font-size:13px;color:rgba(255,255,255,.7);white-space:nowrap}
+.master-slider{flex:1;-webkit-appearance:none;appearance:none;height:6px;border-radius:3px;
+  background:rgba(255,255,255,.2);outline:none;cursor:pointer}
+.master-slider::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;
+  background:#fff;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.master-slider::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:#fff;cursor:pointer;border:none}
+.master-val{font-size:12px;color:rgba(255,255,255,.6);width:40px;text-align:right}
+.action-row{display:flex;gap:10px}
+.act-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 0;
+  border-radius:12px;background:rgba(255,255,255,.08);cursor:pointer;transition:.15s;border:1px solid rgba(255,255,255,.08)}
+.act-btn:hover{background:rgba(255,255,255,.16)}
+.act-btn.primary{background:rgba(96,165,250,.2);border-color:rgba(96,165,250,.4)}
+.act-btn.danger{background:rgba(244,63,94,.18);border-color:rgba(244,63,94,.4)}
+.act-icon{font-size:18px}
+.act-text{font-size:11px;color:rgba(255,255,255,.8)}
+
+/* ---------- 弹层 ---------- */
+.mask-layer{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:20;display:none}
+.mask-layer.show{display:block}
+.sheet{position:fixed;bottom:0;left:0;right:0;background:#1e293b;border-radius:20px 20px 0 0;
+  padding:20px;z-index:30;transform:translateY(100%);transition:transform .3s ease;max-height:70vh;overflow-y:auto}
+.sheet.show{transform:translateY(0)}
+.sheet-title{font-size:16px;font-weight:700;margin-bottom:16px;text-align:center}
+.sheet-hint{font-size:12px;color:rgba(255,255,255,.4);text-align:center;margin-top:12px}
+.bg-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.bg-item{height:70px;border-radius:12px;cursor:pointer;position:relative;overflow:hidden;
+  border:2px solid transparent;transition:.15s}
+.bg-item.active{border-color:#60a5fa;box-shadow:0 0 0 1px #60a5fa}
+.bg-name{position:absolute;bottom:6px;left:8px;font-size:12px;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.timer-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.timer-item{padding:14px 0;text-align:center;border-radius:12px;background:rgba(255,255,255,.08);
+  cursor:pointer;font-size:14px;transition:.15s;border:1px solid transparent}
+.timer-item:hover{background:rgba(255,255,255,.16)}
+.timer-item.active{background:rgba(96,165,250,.25);border-color:rgba(96,165,250,.6)}
+.custom-timer{display:none;margin-top:14px;padding:14px;background:rgba(255,255,255,.06);border-radius:12px}
+.custom-timer.show{display:block}
+.ct-label{font-size:13px;color:rgba(255,255,255,.6);margin-bottom:10px}
+.ct-row{display:flex;gap:10px}
+.ct-input{flex:1;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.15);
+  background:rgba(0,0,0,.3);color:#fff;font-size:14px;outline:none}
+.ct-input:focus{border-color:#60a5fa}
+.ct-btn{padding:10px 20px;border-radius:10px;background:#60a5fa;color:#fff;font-size:14px;font-weight:600;
+  cursor:pointer;border:none}
+.ct-btn:hover{background:#3b82f6}
+
+/* ---------- Toast ---------- */
+.toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.75);
+  color:#fff;padding:12px 20px;border-radius:10px;font-size:14px;z-index:50;opacity:0;
+  transition:opacity .3s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+
+@media(min-width:641px){
+  .scroll-wrap{height:calc(100% - 66px - 130px);max-width:600px;margin:0 auto}
+  .nav-bar,.dock{max-width:600px;margin:0 auto;left:50%;transform:translateX(-50%)}
+}
+</style>
+</head>
+<body>
+
+<div class="bg-layer" id="bgLayer"></div>
+<div class="bg-mask"></div>
+
+<!-- 导航 -->
+<div class="nav-bar">
+  <div class="nav-title">🍃 自然之声</div>
+  <div class="nav-right">
+    <div class="nav-btn" id="bgBtn" title="背景主题">🖼️</div>
+    <div class="nav-btn timer-btn" id="timerBtn" title="定时关闭">⏱️<span class="timer-count" id="timerCount" style="display:none"></span></div>
+  </div>
+</div>
+
+<!-- 内容 -->
+<div class="scroll-wrap">
+  <div class="header-tip">
+    <span>同时播放最多 3 种音效 · 点击切换</span>
+    <span>已开启 <span class="count-num" id="activeCount">0</span>/3</span>
+  </div>
+  <div class="sound-grid" id="soundGrid"></div>
+  <div style="height:20px"></div>
+</div>
+
+<!-- 底部 Dock -->
+<div class="dock">
+  <div class="dock-row master-row">
+    <span class="master-label">总音量</span>
+    <input type="range" class="master-slider" id="masterSlider" min="0" max="1" step="0.05" value="0.8">
+    <span class="master-val" id="masterVal">80%</span>
+  </div>
+  <div class="dock-row action-row">
+    <div class="act-btn" id="dockBgBtn"><span class="act-icon">🖼️</span><span class="act-text">背景</span></div>
+    <div class="act-btn primary" id="dockTimerBtn"><span class="act-icon">⏱️</span><span class="act-text" id="dockTimerText">定时</span></div>
+    <div class="act-btn danger" id="resetBtn"><span class="act-icon">🔄</span><span class="act-text">重置</span></div>
+  </div>
+</div>
+
+<!-- 背景选择 -->
+<div class="mask-layer" id="mask"></div>
+<div class="sheet" id="bgSheet">
+  <div class="sheet-title">选择背景主题</div>
+  <div class="bg-grid" id="bgGrid"></div>
+  <div class="sheet-hint">渐变背景 · 点击切换</div>
+</div>
+
+<!-- 定时选择 -->
+<div class="sheet" id="timerSheet">
+  <div class="sheet-title">定时关闭</div>
+  <div class="timer-grid" id="timerGrid"></div>
+  <div class="custom-timer" id="customTimer">
+    <div class="ct-label">自定义分钟数（1-240）</div>
+    <div class="ct-row">
+      <input type="number" class="ct-input" id="customInput" value="30" min="1" max="240">
+      <div class="ct-btn" id="customConfirm">确定</div>
+    </div>
+  </div>
+  <div class="sheet-hint">时间到后自动全部静音</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ 配置 ============ */
+const SOUND_LIST = [
+  {id:'rain',      name:'雨声',     icon:'🌧️', color:'#3b82f6', desc:'淅淅沥沥 雨打屋檐'},
+  {id:'stream',    name:'溪流',     icon:'🌊', color:'#06b6d4', desc:'潺潺流水 清澈见底'},
+  {id:'wind-forest',name:'林间风声',icon:'🌲', color:'#10b981', desc:'松涛阵阵 风过林梢'},
+  {id:'campfire',  name:'篝火',     icon:'🔥', color:'#f97316', desc:'噼啪作响 温暖治愈'},
+  {id:'waves',     name:'海浪',     icon:'🏖️', color:'#0ea5e9', desc:'潮起潮落 大海呼吸'},
+  {id:'birds',     name:'鸟鸣',     icon:'🐦', color:'#84cc16', desc:'清晨林间 百鸟争鸣'},
+  {id:'snow',      name:'落雪',     icon:'❄️', color:'#94a3b8', desc:'雪花飘落 万籁俱寂'},
+  {id:'evening-wind',name:'晚风',   icon:'🍃', color:'#a78bfa', desc:'晚风拂面 心静如水'}
+]
+
+const BG_LIST = [
+  {id:'forest-morning',name:'晨光林间',gradient:'linear-gradient(135deg,#064e3b 0%,#065f46 40%,#134e4a 80%,#0c4a6e 100%)'},
+  {id:'snow-lake',     name:'冬日落雪',gradient:'linear-gradient(135deg,#1e293b 0%,#334155 50%,#1e3a5f 80%,#0f172a 100%)'},
+  {id:'sunset-lake',   name:'湖边晚霞',gradient:'linear-gradient(135deg,#7c2d12 0%,#9a3412 30%,#be123c 60%,#581c87 90%,#1e1b4b 100%)'},
+  {id:'stream-forest', name:'溪流树林',gradient:'linear-gradient(135deg,#052e16 0%,#14532d 40%,#0e7490 75%,#164e63 100%)'}
+]
+
+const TIMER_OPTIONS = [
+  {label:'关闭',value:0},{label:'10分钟',value:10},{label:'30分钟',value:30},
+  {label:'60分钟',value:60},{label:'自定义',value:-1}
+]
+const MAX_ACTIVE = 3
+const DEFAULT_VOL = 0.7
+
+/* ============ 状态 ============ */
+const audioMap = {}       // id -> HTMLAudioElement
+const volumeMap = {}      // id -> 0~1
+const activeSet = new Set()
+let masterVolume = 0.8
+let currentBgIndex = 0
+let timerInterval = null
+let timerEndTime = 0
+
+/* ============ 工具 ============ */
+function toast(msg){
+  const el = document.getElementById('toast')
+  el.textContent = msg
+  el.classList.add('show')
+  clearTimeout(toast._t)
+  toast._t = setTimeout(()=>el.classList.remove('show'),1800)
+}
+
+function ensureAudio(id){
+  if(audioMap[id]) return audioMap[id]
+  const a = new Audio('sounds/' + id + '.mp3')
+  a.loop = true
+  a.volume = (volumeMap[id] !== undefined ? volumeMap[id] : DEFAULT_VOL) * masterVolume
+  a.addEventListener('error', ()=>console.warn('[audio err]', id))
+  audioMap[id] = a
+  return a
+}
+
+function applyVolume(id){
+  const a = audioMap[id]
+  if(a) a.volume = (volumeMap[id] !== undefined ? volumeMap[id] : DEFAULT_VOL) * masterVolume
+}
+
+/* ============ 渲染 ============ */
+function renderSoundGrid(){
+  const grid = document.getElementById('soundGrid')
+  grid.innerHTML = SOUND_LIST.map(s=>{
+    const vol = volumeMap[s.id] !== undefined ? volumeMap[s.id] : DEFAULT_VOL
+    const active = activeSet.has(s.id)
+    return `<div class="sound-card ${active?'active':''}" data-id="${s.id}" style="--card-color:${s.color}">
+      <div class="card-icon">${s.icon}</div>
+      <div class="card-name">${s.name}</div>
+      <div class="card-desc">${s.desc}</div>
+      <div class="card-state"><span class="state-dot"></span><span>${active?'播放中':'点击播放'}</span></div>
+      <div class="vol-row" data-vol-row>
+        <span class="vol-label">🔈</span>
+        <input type="range" class="vol-slider" data-id="${s.id}" min="0" max="1" step="0.05" value="${vol}" style="background:linear-gradient(to right,${s.color} ${vol*100}%,rgba(255,255,255,.2) ${vol*100}%)">
+        <span class="vol-label">🔊</span>
+      </div>
+    </div>`
+  }).join('')
+  updateActiveCount()
+}
+
+function renderBgGrid(){
+  const grid = document.getElementById('bgGrid')
+  grid.innerHTML = BG_LIST.map((b,i)=>
+    `<div class="bg-item ${i===currentBgIndex?'active':''}" data-index="${i}" style="background:${b.gradient}">
+       <div class="bg-name">${b.name}</div>
+     </div>`
+  ).join('')
+}
+
+function renderTimerGrid(){
+  const grid = document.getElementById('timerGrid')
+  grid.innerHTML = TIMER_OPTIONS.map(t=>
+    `<div class="timer-item ${t.value===currentTimerVal?'active':''}" data-value="${t.value}">${t.label}</div>`
+  ).join('')
+}
+
+let currentTimerVal = 0
+function updateActiveCount(){
+  document.getElementById('activeCount').textContent = activeSet.size
+}
+
+/* ============ 交互 ============ */
+function toggleSound(id){
+  if(activeSet.has(id)){
+    const a = audioMap[id]
+    if(a){ a.pause(); a.currentTime = 0 }
+    activeSet.delete(id)
+  }else{
+    if(activeSet.size >= MAX_ACTIVE){
+      const first = activeSet.values().next().value
+      const oldA = audioMap[first]
+      if(oldA){ oldA.pause(); oldA.currentTime = 0 }
+      activeSet.delete(first)
+    }
+    const a = ensureAudio(id)
+    applyVolume(id)
+    a.play().catch(e=>console.warn('play failed',id,e))
+    activeSet.add(id)
+  }
+  renderSoundGrid()
+}
+
+function changeVolume(id, vol){
+  volumeMap[id] = vol
+  applyVolume(id)
+}
+
+function changeMaster(vol){
+  masterVolume = vol
+  document.getElementById('masterVal').textContent = Math.round(vol*100) + '%'
+  Object.keys(audioMap).forEach(applyVolume)
+}
+
+function resetAll(){
+  activeSet.forEach(id=>{
+    const a = audioMap[id]
+    if(a){ a.pause(); a.currentTime = 0 }
+  })
+  activeSet.clear()
+  SOUND_LIST.forEach(s=>{ volumeMap[s.id] = DEFAULT_VOL })
+  renderSoundGrid()
+  document.getElementById('masterSlider').value = 0.8
+  changeMaster(0.8)
+  toast('已重置')
+}
+
+function setBg(index){
+  currentBgIndex = index
+  document.getElementById('bgLayer').style.background = BG_LIST[index].gradient
+  renderBgGrid()
+}
+
+function openSheet(which){
+  document.getElementById('mask').classList.add('show')
+  document.getElementById(which==='bg'?'bgSheet':'timerSheet').classList.add('show')
+}
+function closeSheets(){
+  document.getElementById('mask').classList.remove('show')
+  document.getElementById('bgSheet').classList.remove('show')
+  document.getElementById('timerSheet').classList.remove('show')
+  document.getElementById('customTimer').classList.remove('show')
+}
+
+function startTimer(minutes){
+  clearTimer()
+  if(minutes <= 0) return
+  timerEndTime = Date.now() + minutes * 60 * 1000
+  updateTimerDisplay()
+  timerInterval = setInterval(()=>{
+    const remain = Math.max(0, timerEndTime - Date.now())
+    if(remain <= 0){
+      clearTimer()
+      resetAll()
+      currentTimerVal = 0
+      updateTimerUI()
+      toast('时间到，已自动静音')
+    }else{
+      updateTimerDisplay()
+    }
+  }, 1000)
+}
+
+function clearTimer(){
+  if(timerInterval){ clearInterval(timerInterval); timerInterval = null }
+  timerEndTime = 0
+  document.getElementById('timerCount').style.display = 'none'
+  document.getElementById('dockTimerText').textContent = '定时'
+  document.getElementById('timerBtn').classList.remove('active')
+}
+
+function updateTimerDisplay(){
+  const remain = Math.max(0, timerEndTime - Date.now())
+  const mins = Math.floor(remain/60000)
+  const secs = Math.floor((remain%60000)/1000)
+  const text = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`
+  document.getElementById('timerCount').textContent = text
+  document.getElementById('timerCount').style.display = 'block'
+  document.getElementById('dockTimerText').textContent = text
+  document.getElementById('timerBtn').classList.add('active')
+}
+
+function updateTimerUI(){
+  renderTimerGrid()
+  if(currentTimerVal <= 0){
+    document.getElementById('timerCount').style.display = 'none'
+    document.getElementById('dockTimerText').textContent = '定时'
+    document.getElementById('timerBtn').classList.remove('active')
+  }
+}
+
+function applyTimer(minutes){
+  currentTimerVal = minutes
+  if(minutes <= 0){
+    clearTimer()
+    updateTimerUI()
+    toast('定时已关闭')
+  }else{
+    startTimer(minutes)
+    updateTimerUI()
+    toast(`${minutes} 分钟后自动静音`)
+  }
+  closeSheets()
+}
+
+/* ============ 事件绑定 ============ */
+document.getElementById('soundGrid').addEventListener('click', e=>{
+  const row = e.target.closest('[data-vol-row]')
+  if(row && e.target.tagName === 'INPUT') return  // slider 自己处理
+  const card = e.target.closest('.sound-card')
+  if(card) toggleSound(card.dataset.id)
+})
+
+document.getElementById('soundGrid').addEventListener('input', e=>{
+  if(e.target.classList.contains('vol-slider')){
+    const id = e.target.dataset.id
+    const vol = parseFloat(e.target.value)
+    changeVolume(id, vol)
+    const color = SOUND_LIST.find(s=>s.id===id).color
+    e.target.style.background = `linear-gradient(to right,${color} ${vol*100}%,rgba(255,255,255,.2) ${vol*100}%)`
+  }
+})
+
+document.getElementById('masterSlider').addEventListener('input', e=>{
+  changeMaster(parseFloat(e.target.value))
+  const v = e.target.value
+  e.target.style.background = `linear-gradient(to right,#60a5fa ${v*100}%,rgba(255,255,255,.2) ${v*100}%)`
+})
+
+document.getElementById('resetBtn').addEventListener('click', resetAll)
+
+document.getElementById('bgBtn').addEventListener('click', ()=>openSheet('bg'))
+document.getElementById('dockBgBtn').addEventListener('click', ()=>openSheet('bg'))
+document.getElementById('timerBtn').addEventListener('click', ()=>openSheet('timer'))
+document.getElementById('dockTimerBtn').addEventListener('click', ()=>openSheet('timer'))
+document.getElementById('mask').addEventListener('click', closeSheets)
+
+document.getElementById('bgGrid').addEventListener('click', e=>{
+  const item = e.target.closest('.bg-item')
+  if(item){ setBg(parseInt(item.dataset.index)); closeSheets() }
+})
+
+document.getElementById('timerGrid').addEventListener('click', e=>{
+  const item = e.target.closest('.timer-item')
+  if(item){
+    const v = parseInt(item.dataset.value)
+    if(v === -1){
+      document.getElementById('customTimer').classList.add('show')
+    }else{
+      applyTimer(v)
+    }
+  }
+})
+
+document.getElementById('customConfirm').addEventListener('click', ()=>{
+  let v = parseInt(document.getElementById('customInput').value, 10)
+  if(isNaN(v)) v = 10
+  v = Math.min(240, Math.max(1, v))
+  applyTimer(v)
+})
+
+/* ============ 初始化 ============ */
+SOUND_LIST.forEach(s=>{ volumeMap[s.id] = DEFAULT_VOL })
+renderSoundGrid()
+renderBgGrid()
+renderTimerGrid()
+setBg(0)
+changeMaster(0.8)
+
+// 首次播放需要用户交互（浏览器 autoplay 限制）
+document.addEventListener('touchstart', function once(){
+  document.removeEventListener('touchstart', once)
+}, {passive:true})
+</script>
+</body>
+</html>

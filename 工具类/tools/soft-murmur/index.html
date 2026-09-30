@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>轻语 · 白噪音混音</title>
+<meta name="description" content="仿 A Soft Murmur：极简白噪音混音页，8 种自然音 + 白/粉/棕噪音实时合成，无限混音、波动模式、定时淡出。">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  font-family:Georgia,'Times New Roman',"Songti SC","SimSun",serif;
+  background:#1b1b1f;color:#e8e6e3;min-height:100%;
+  display:flex;flex-direction:column;align-items:center;
+  background-image:radial-gradient(ellipse at 50% -10%,#2c2c34 0%,#1b1b1f 60%);
+}
+.wrap{width:100%;max-width:460px;padding:36px 20px 60px;flex:1}
+
+h1{font-size:26px;font-weight:400;letter-spacing:6px;text-align:center;color:#d8d5d0}
+.sub{text-align:center;font-size:12.5px;color:#8a877f;letter-spacing:2px;margin-top:8px}
+.sub em{font-style:normal;border-bottom:1px dotted #55524b}
+
+/* 声音行 */
+.rows{margin-top:34px;border-top:1px solid #33322f}
+.row{border-bottom:1px solid #33322f;padding:13px 4px;transition:background .3s}
+.row-head{display:flex;align-items:center;gap:14px;cursor:pointer;user-select:none}
+.play{
+  width:44px;height:44px;border-radius:50%;flex:none;
+  border:1px solid #57544d;background:transparent;color:#c9c6c0;
+  font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:.25s;
+}
+.row.active .play{background:#c9c6c0;color:#1b1b1f;border-color:#c9c6c0}
+.name{font-size:17px;letter-spacing:3px;flex:1}
+.row.active .name{color:#fff}
+.en{font-size:11px;color:#6d6a63;letter-spacing:1px}
+.row.active .en{color:#9a978f}
+.vol{display:none;align-items:center;gap:12px;padding:12px 4px 2px 58px}
+.row.active .vol{display:flex;animation:fadein .35s ease}
+@keyframes fadein{from{opacity:0;transform:translateY(-4px)}to{opacity:1}}
+.vol input{flex:1;-webkit-appearance:none;appearance:none;height:2px;background:#44423d;border-radius:1px;outline:none;cursor:pointer}
+.vol input::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#d8d5d0;cursor:pointer}
+.vol input::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#d8d5d0;cursor:pointer;border:none}
+.vol .pct{font-size:11px;color:#6d6a63;width:34px;text-align:right;font-variant-numeric:tabular-nums}
+
+/* 底部控制 */
+.controls{margin-top:36px;text-align:center}
+.ctl-title{font-size:11px;letter-spacing:3px;color:#6d6a63;margin-bottom:12px}
+.chips{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
+.chip{
+  font-family:inherit;font-size:12.5px;letter-spacing:1px;color:#b5b2aa;
+  background:transparent;border:1px solid #44423d;border-radius:999px;
+  padding:7px 16px;cursor:pointer;transition:.2s;
+}
+.chip:hover{border-color:#8a877f;color:#e8e6e3}
+.chip.on{background:#c9c6c0;border-color:#c9c6c0;color:#1b1b1f}
+.master{display:flex;align-items:center;gap:12px;margin-top:26px;padding:0 4px}
+.master span{font-size:11px;color:#6d6a63;letter-spacing:2px;white-space:nowrap}
+.master input{flex:1;-webkit-appearance:none;appearance:none;height:2px;background:#44423d;border-radius:1px;outline:none;cursor:pointer}
+.master input::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#d8d5d0;cursor:pointer}
+.master input::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#d8d5d0;cursor:pointer;border:none}
+#timerText{font-size:12px;color:#8a877f;letter-spacing:2px;margin-top:14px;min-height:16px;font-variant-numeric:tabular-nums}
+.note{margin-top:34px;font-size:11px;color:#5a5850;text-align:center;line-height:1.9;letter-spacing:1px}
+.back{display:inline-block;margin-top:26px;font-size:12px;color:#6d6a63;letter-spacing:2px;text-decoration:none;border-bottom:1px solid transparent}
+.back:hover{color:#c9c6c0;border-bottom-color:#c9c6c0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>轻 语</h1>
+  <div class="sub">a soft murmur · <em>点击名字，让声音慢慢叠上来</em></div>
+
+  <div class="rows" id="rows"></div>
+
+  <div class="controls">
+    <div class="ctl-title">波 动</div>
+    <div class="chips">
+      <button class="chip" id="meander">Meander · 音量随风起伏</button>
+    </div>
+    <div class="ctl-title" style="margin-top:26px">定 时</div>
+    <div class="chips" id="timerChips">
+      <button class="chip on" data-min="0">关闭</button>
+      <button class="chip" data-min="10">10分钟</button>
+      <button class="chip" data-min="30">30分钟</button>
+      <button class="chip" data-min="60">60分钟</button>
+    </div>
+    <div class="master">
+      <span>总音量</span>
+      <input type="range" id="master" min="0" max="1" step="0.01" value="0.8">
+    </div>
+    <div id="timerText"></div>
+  </div>
+
+  <div class="note">白噪音 / 粉噪音 / 棕噪音由 WebAudio 实时合成，零音频文件<br>环境音源：Mixkit（免版税）+ Freesound CC0 颂钵 · 状态自动保存</div>
+  <a class="back" href="../../../index.htm">← 返回作品集</a>
+</div>
+
+<script>
+/* ================= 配置 ================= */
+const SND_DIR = 'sounds/'
+const SOUNDS = [
+  {id:'rain',     zh:'雨声',   en:'rain',        file:'rain.mp3'},
+  {id:'thunder',  zh:'雷雨',   en:'thunder',     file:'thunder.mp3'},
+  {id:'waves',    zh:'海浪',   en:'waves',       file:'waves.mp3'},
+  {id:'stream',   zh:'溪流',   en:'stream',      file:'stream.mp3'},
+  {id:'wind',     zh:'山风',   en:'wind',        file:'wind.mp3'},
+  {id:'fire',     zh:'篝火',   en:'fire',        file:'fire.mp3'},
+  {id:'birds',    zh:'鸟鸣',   en:'birds',       file:'birds.mp3'},
+  {id:'crickets', zh:'虫鸣',   en:'crickets',    file:'crickets.mp3'},
+  {id:'cafe',     zh:'咖啡馆', en:'cafe',        file:'cafe.mp3'},
+  {id:'bowl',     zh:'颂钵',   en:'singing bowl',file:'bowl.mp3'},
+  {id:'snow',     zh:'风雪',   en:'blizzard',    file:'snow.mp3'},
+  {id:'white',  zh:'白噪音', en:'white noise', noise:'white'},
+  {id:'pink',   zh:'粉噪音', en:'pink noise',  noise:'pink'},
+  {id:'brown',  zh:'棕噪音', en:'brown noise', noise:'brown'},
+]
+const LS_KEY = 'soft-murmur-v1'
+
+/* ================= 状态 ================= */
+const state = { active:{}, vols:{}, meander:false, master:0.8 }
+SOUNDS.forEach(s=>{ state.active[s.id]=false; state.vols[s.id]=0.7 })
+try{
+  const saved = JSON.parse(localStorage.getItem(LS_KEY)||'null')
+  if(saved){
+    if(saved.vols) Object.assign(state.vols, saved.vols)
+    if(typeof saved.master==='number') state.master = saved.master
+    if(saved.meander) state.meander = true
+  }
+}catch(e){}
+
+const players = {}   // id -> {kind:'file',audio} | {kind:'noise',gain,ctx...}
+let meanderTimer = null
+let timerInterval = null, timerEnd = 0
+
+/* ================= 文件音源 ================= */
+function filePlayer(id){
+  if(players[id]) return players[id]
+  const s = SOUNDS.find(x=>x.id===id)
+  const a = new Audio(SND_DIR + s.file)
+  a.loop = true
+  a.volume = state.vols[id] * state.master
+  players[id] = {kind:'file', audio:a}
+  return players[id]
+}
+
+/* ================= 合成噪音（WebAudio） ================= */
+let actx = null, noiseGainBus = null
+function noisePlayer(id){
+  if(players[id]) return players[id]
+  if(!actx){
+    actx = new (window.AudioContext||window.webkitAudioContext)()
+    noiseGainBus = actx.createGain()
+    noiseGainBus.gain.value = state.master
+    noiseGainBus.connect(actx.destination)
+  }
+  const type = SOUNDS.find(x=>x.id===id).noise
+  const len = 4 * actx.sampleRate
+  const buf = actx.createBuffer(1, len, actx.sampleRate)
+  const d = buf.getChannelData(0)
+  if(type === 'white'){
+    for(let i=0;i<len;i++) d[i] = Math.random()*2-1
+  }else if(type === 'brown'){
+    let last = 0
+    for(let i=0;i<len;i++){
+      const w = Math.random()*2-1
+      last = (last + 0.02*w) / 1.02
+      d[i] = last * 3.5
+    }
+  }else{ /* pink：Paul Kellet 滤波 */
+    let b0=0,b1=0,b2=0,b3=0,b4=0,b5=0,b6=0
+    for(let i=0;i<len;i++){
+      const w = Math.random()*2-1
+      b0 = 0.99886*b0 + w*0.0555179
+      b1 = 0.99332*b1 + w*0.0750759
+      b2 = 0.96900*b2 + w*0.1538520
+      b3 = 0.86650*b3 + w*0.3104856
+      b4 = 0.55000*b4 + w*0.5329522
+      b5 = -0.7616*b5 - w*0.0168980
+      d[i] = (b0+b1+b2+b3+b4+b5+b6+w*0.5362) * 0.11
+      b6 = w*0.115926
+    }
+  }
+  const src = actx.createBufferSource()
+  src.buffer = buf; src.loop = true
+  const gain = actx.createGain()
+  gain.gain.value = state.vols[id]
+  src.connect(gain); gain.connect(noiseGainBus)
+  src.start()
+  players[id] = {kind:'noise', src, gain}
+  return players[id]
+}
+
+/* ================= 播放控制 ================= */
+function start(id){
+  const s = SOUNDS.find(x=>x.id===id)
+  if(s.noise){
+    if(actx && actx.state==='suspended') actx.resume()
+    noisePlayer(id)
+  }else{
+    const p = filePlayer(id)
+    p.audio.volume = state.vols[id] * state.master
+    p.audio.play().catch(()=>{})
+  }
+}
+function stop(id){
+  const p = players[id]
+  if(!p) return
+  if(p.kind==='file'){ p.audio.pause(); p.audio.currentTime = 0 }
+  else{ try{p.src.stop()}catch(e){}; p.src.disconnect(); p.gain.disconnect(); delete players[id] }
+}
+function applyVol(id){
+  const p = players[id]
+  if(!p) return
+  const v = state.vols[id] * (p.kind==='file' ? state.master : 1)
+  if(p.kind==='file') p.audio.volume = Math.min(1, Math.max(0, v))
+  else p.gain.gain.setTargetAtTime(state.vols[id], actx.currentTime, 0.1)
+}
+function applyMaster(){
+  Object.keys(players).forEach(applyVol)
+  if(noiseGainBus) noiseGainBus.gain.setTargetAtTime(state.master, actx.currentTime, 0.05)
+}
+function save(){
+  localStorage.setItem(LS_KEY, JSON.stringify({vols:state.vols, master:state.master, meander:state.meander}))
+}
+
+/* ================= 波动（Meander） ================= */
+function setMeander(on){
+  state.meander = on
+  document.getElementById('meander').classList.toggle('on', on)
+  if(on){
+    meanderTimer = setInterval(()=>{
+      SOUNDS.forEach(s=>{
+        if(!state.active[s.id]) return
+        const p = players[s.id]
+        if(!p) return
+        const drift = 0.55 + Math.random()*0.45   // 55%~100% 间缓慢起伏
+        const v = state.vols[s.id] * drift
+        if(p.kind==='file'){
+          const cur = p.audio.volume
+          p.audio.volume = Math.min(1, Math.max(0, cur + (v*state.master - cur)*0.3))
+        }else{
+          p.gain.gain.setTargetAtTime(v, actx.currentTime, 1.2)
+        }
+      })
+    }, 2600)
+  }else{
+    clearInterval(meanderTimer); meanderTimer = null
+    Object.keys(players).forEach(applyVol)
+  }
+  save()
+}
+
+/* ================= 定时（到时淡出） ================= */
+function setTimer(min){
+  clearInterval(timerInterval); timerInterval = null; timerEnd = 0
+  document.querySelectorAll('#timerChips .chip').forEach(c=>c.classList.toggle('on', +c.dataset.min===min))
+  const txt = document.getElementById('timerText')
+  if(min<=0){ txt.textContent=''; return }
+  timerEnd = Date.now() + min*60000
+  const tick = ()=>{
+    const remain = timerEnd - Date.now()
+    if(remain <= 0){
+      clearInterval(timerInterval); timerInterval = null
+      fadeOutAll()
+      setTimer(0)
+      return
+    }
+    const m = String(Math.floor(remain/60000)).padStart(2,'0')
+    const s = String(Math.floor(remain%60000/1000)).padStart(2,'0')
+    txt.textContent = `${m}:${s} 后渐静音`
+  }
+  tick(); timerInterval = setInterval(tick, 1000)
+}
+function fadeOutAll(){
+  // 5 秒线性淡出再全停
+  const step = ()=>{
+    let allZero = true
+    Object.keys(players).forEach(id=>{
+      const p = players[id]
+      if(p.kind==='file'){
+        p.audio.volume = Math.max(0, p.audio.volume - 0.04)
+        if(p.audio.volume > 0.001) allZero = false
+      }else{
+        const g = p.gain.gain.value
+        p.gain.gain.value = Math.max(0, g - 0.02)
+        if(g > 0.001) allZero = false
+      }
+    })
+    if(!allZero) setTimeout(step, 200)
+    else SOUNDS.forEach(s=>{ if(state.active[s.id]){ stop(s.id); state.active[s.id]=false } ; render() })
+  }
+  step()
+}
+
+/* ================= 渲染 ================= */
+function render(){
+  const rows = document.getElementById('rows')
+  rows.innerHTML = SOUNDS.map(s=>`
+    <div class="row ${state.active[s.id]?'active':''}" data-id="${s.id}">
+      <div class="row-head">
+        <button class="play">${state.active[s.id]?'❚❚':'▶'}</button>
+        <span class="name">${s.zh}</span>
+        <span class="en">${s.en}</span>
+      </div>
+      <div class="vol">
+        <input type="range" min="0" max="1" step="0.01" value="${state.vols[s.id]}" data-id="${s.id}">
+        <span class="pct">${Math.round(state.vols[s.id]*100)}%</span>
+      </div>
+    </div>`).join('')
+}
+
+document.getElementById('rows').addEventListener('click', e=>{
+  if(e.target.tagName === 'INPUT') return
+  const row = e.target.closest('.row')
+  if(!row) return
+  const id = row.dataset.id
+  if(state.active[id]){ stop(id); state.active[id]=false }
+  else{ state.active[id]=true; start(id) }
+  save(); render()
+})
+document.getElementById('rows').addEventListener('input', e=>{
+  if(e.target.tagName !== 'INPUT') return
+  const id = e.target.dataset.id
+  state.vols[id] = parseFloat(e.target.value)
+  e.target.nextElementSibling.textContent = Math.round(state.vols[id]*100)+'%'
+  applyVol(id); save()
+})
+document.getElementById('master').value = state.master
+document.getElementById('master').addEventListener('input', e=>{
+  state.master = parseFloat(e.target.value); applyMaster(); save()
+})
+document.getElementById('meander').addEventListener('click', ()=>setMeander(!state.meander))
+document.getElementById('timerChips').addEventListener('click', e=>{
+  const c = e.target.closest('.chip'); if(!c) return
+  setTimer(+c.dataset.min)
+})
+
+render()
+if(state.meander) setMeander(true)
+</script>
+</body>
+</html>

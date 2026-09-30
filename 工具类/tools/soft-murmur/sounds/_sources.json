@@ -1,0 +1,79 @@
+{
+  "rain": {
+    "title": "light rain loop",
+    "url": "https://assets.mixkit.co/active_storage/sfx/2393/2393-preview.mp3",
+    "duration_s": 15,
+    "license": "Mixkit SFX Free License",
+    "license_url": "https://mixkit.co/license/#sfxFree"
+  },
+  "thunder": {
+    "title": "calm thunderstorm in the jungle",
+    "url": "https://assets.mixkit.co/active_storage/sfx/2415/2415-preview.mp3",
+    "duration_s": 49,
+    "license": "Mixkit SFX Free License",
+    "license_url": "https://mixkit.co/license/#sfxFree"
+  },
+  "waves": {
+    "title": "sea waves with birds loop",
+    "url": "https://assets.mixkit.co/active_storage/sfx/1185/1185-preview.mp3",
+    "duration_s": 38,
+    "license": "Mixkit SFX Free License",
+    "license_url": "https://mixkit.co/license/#sfxFree"
+  },
+  "stream": {
+    "title": "water pour light stream",
+    "url": "https://assets.mixkit.co/active_storage/sfx/1318/1318-preview.mp3",
+    "duration_s": 36,
+    "license": "Mixkit SFX Free License",
+    "license_url": "https://mixkit.co/license/#sfxFree"
+  },
+  "wind": {
+    "title": "wind in the top of the mountain",
+    "url": "https://assets.mixkit.co/active_storage/sfx/1267/1267-preview.mp3",
+    "duration_s": 31,
+    "license": "Mixkit SFX Free License",
+    "license_url": "https://mixkit.co/license/#sfxFree"
+  },
+  "fire": {
+    "title": "campfire crackles",
+    "url": "https://assets.mixkit.co/active_storage/sfx/1330/1330-preview.mp3",
+    "duration_s": 24,
+    "license": "Mixkit SFX Free License",
+    "license_url": "https://mixkit.co/license/#sfxFree"
+  },
+  "birds": {
+    "title": "morning birds",
+    "url": "https://assets.mixkit.co/active_storage/sfx/2472/2472-preview.mp3",
+    "duration_s": 209,
+    "license": "Mixkit SFX Free License",
+    "license_url": "https://mixkit.co/license/#sfxFree"
+  },
+  "crickets": {
+    "title": "crickets and insects in the wild ambience",
+    "url": "https://assets.mixkit.co/active_storage/sfx/39/39-preview.mp3",
+    "duration_s": 26,
+    "license": "Mixkit SFX Free License",
+    "license_url": "https://mixkit.co/license/#sfxFree"
+  },
+  "cafe": {
+    "title": "hotel restaurant ambience and footsteps",
+    "url": "https://assets.mixkit.co/active_storage/sfx/452/452-preview.mp3",
+    "duration_s": 28,
+    "license": "Mixkit SFX Free License",
+    "license_url": "https://mixkit.co/license/#sfxFree"
+  },
+  "bowl": {
+    "title": "Singing Bowl, long without reverb",
+    "url": "https://freesound.org/people/hollandm/sounds/573805/",
+    "duration_s": 120,
+    "license": "Creative Commons 0 (CC0)",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "snow": {
+    "title": "blizzard cold winds",
+    "url": "https://assets.mixkit.co/active_storage/sfx/1153/1153-preview.mp3",
+    "duration_s": 130,
+    "license": "Mixkit SFX Free License",
+    "license_url": "https://mixkit.co/license/#sfxFree"
+  }
+}
