@@ -29,6 +29,7 @@
 | 🔮 消消乐 | [体验](娱乐类/games/match3/index.html) | 网格三连匹配、交换消除、下落补充与连锁循环结算 |
 | 🐍 贪吃蛇 | [体验](娱乐类/games/snake/index.html) | setInterval 游戏循环、碰撞检测、键盘+触屏滑动 |
 | 🐸 青蛙过河 | [体验](娱乐类/games/frog/index.html) | 经典换位谜题、合法跳步规则判定、步数统计、可重置状态 |
+| 🧘 青蛙修仙 | [体验](娱乐类/games/frog-xiuxian/index.html) | 微信小游戏 H5 移植：放置挂机+离线收益、破境剧情、3×3 拼图考验、出门采集，localStorage 存档 |
 | 📹 屏幕录制 | [体验](工具类/tools/luping.html) | MediaRecorder/getDisplayMedia，纯前端录屏与 WebM 下载 |
 | 🏯 紫禁城漫游 | [体验](许愿/故宫漫游/index.html) | Three.js 中轴宫殿群、飞鸟飘旗、小地图、第一人称 / 自动巡游 |
 | 🏎️ 霓虹环道 | [体验](许愿/霓虹赛车/index.html) | 霓虹环形赛道、漂移/撞墙减速、圈速 HUD、三圈完赛 |
@@ -56,13 +57,14 @@ html5/
 │   └── tools/
 │       ├── luping.html        # MediaRecorder 屏幕录制
 │       └── tianqi/            # 天气预报（第三方 API）
-├── 娱乐类/                    # 12 个游戏
+├── 娱乐类/                    # 13 个游戏
 │   ├── games/
 │   │   ├── smallgame/         # 六关小游戏合集（Canvas 2D 引擎）
 │   │   ├── minesweeper/       # 扫雷（短按/长按触屏交互）
 │   │   ├── match3/            # 消消乐
 │   │   ├── snake/             # 贪吃蛇
 │   │   ├── frog/              # 青蛙过河
+│   │   ├── frog-xiuxian/      # 青蛙修仙（微信小游戏 H5 移植）
 │   │   ├── sudoku/            # 数独
 │   │   ├── fanzhuanpintu/     # 翻转拼图
 │   │   ├── sliding-puzzle/    # 滑块拼图

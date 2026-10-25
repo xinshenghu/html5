@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>青蛙修仙</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden;background:#07120e}
+body{display:flex;align-items:center;justify-content:center;font-family:sans-serif;
+  touch-action:none;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+#stage{border-radius:10px;overflow:hidden;box-shadow:0 0 44px rgba(0,0,0,.65)}
+canvas{display:block;touch-action:none}
+#back{position:fixed;left:10px;top:10px;padding:6px 12px;border-radius:6px;border:1px solid #2c4438;
+  background:rgba(12,28,20,.72);color:#9fceb0;font-size:13px;cursor:pointer;text-decoration:none}
+#back:hover{background:rgba(20,44,32,.9)}
+</style>
+</head>
+<body>
+<a id="back" href="../../../index.htm">← 返回作品集</a>
+<div id="stage"><canvas id="cv"></canvas></div>
+<script>
+/* =========================================================================
+   青蛙修仙 · H5 版
+   由微信小游戏（Canvas 2D 单文件）移植：
+     wx.getSystemInfoSync()  -> window.innerWidth / innerHeight
+     wx.createCanvas()       -> document.createElement('canvas')
+     wx.get/setStorageSync() -> localStorage（JSON）
+     wx.onTouchStart()       -> touchstart + mousedown
+   游戏逻辑与小游戏版完全一致。
+   ========================================================================= */
+
+const stage = document.getElementById('stage');
+const canvas = document.getElementById('cv');
+const ctx = canvas.getContext('2d');
+
+let W = 0;
+let H = 0;
+let PX = 1;
+
+/** 竖屏画布：宽不超过 460，高不超过 900；PX 同时受宽高约束，保证内容不溢出 */
+function layout() {
+  W = Math.min(window.innerWidth, 460);
+  H = Math.min(window.innerHeight, 900);
+  PX = Math.min(W / 375, H / 660);
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = Math.round(W * dpr);
+  canvas.height = Math.round(H * dpr);
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  stage.style.width = W + 'px';
+  stage.style.height = H + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+layout();
+window.addEventListener('resize', layout);
+
+const SAVE_KEY = 'frog_xiuxian_v2';
+
+function readStore(k) {
+  try {
+    const raw = localStorage.getItem(k);
+    return raw ? JSON.parse(raw) : '';
+  } catch (e) {
+    return '';
+  }
+}
+function writeStore(k, v) {
+  try {
+    localStorage.setItem(k, JSON.stringify(v));
+  } catch (e) {}
+}
+
+const REALMS = [
+  { name: '湿泥初醒', need: 40, idle: 1.2 },
+  { name: '浅塘吐息', need: 120, idle: 2.0 },
+  { name: '荷叶听雨', need: 280, idle: 3.2 },
+  { name: '月下鼓腹', need: 560, idle: 5.0 },
+  { name: '雾岸知秋', need: 980, idle: 7.5 },
+  { name: '云路未名', need: 1600, idle: 11 },
+  { name: '澄心一跃', need: 0, idle: 16 }
+];
+
+/** 破境前剧情：从当前境界冲向下一个 */
+const BREAK_STORIES = [
+  {
+    lines: ['湿泥初醒，灵露满盈。', '破境之前，先稳住心神——', '完成下方小考验，方可踏入浅塘吐息。'],
+    choices: [
+      { id: 'go', label: '稳住心神，开始考验' },
+      { id: 'later', label: '先歇一息再破境' }
+    ]
+  },
+  {
+    lines: ['浅塘吐息日久，荷叶在耳边沙沙作响。', '再进一步，便是听雨的境界。', '拼回一片荷叶，当作投名状。'],
+    choices: [
+      { id: 'go', label: '拼回荷叶，继续破境' },
+      { id: 'later', label: '雨还没下，再等一等' }
+    ]
+  },
+  {
+    lines: ['雨落荷心，腹中鼓起一点月意。', '考验仍是旧题：稳住，拼完整。', '过了，才配月下鼓腹。'],
+    choices: [
+      { id: 'go', label: '借雨势破境' },
+      { id: 'later', label: '今夜月色不够' }
+    ]
+  },
+  {
+    lines: ['月下鼓腹，雾从岸边爬上来。', '知秋不在远处，在拼图缺的那一格。', '补上它。'],
+    choices: [
+      { id: 'go', label: '补上缺格' },
+      { id: 'later', label: '雾太浓，改日' }
+    ]
+  },
+  {
+    lines: ['雾岸知秋之后，云路影影绰绰。', '未名之处，先用考验把门。', '通关，才敢迈步。'],
+    choices: [
+      { id: 'go', label: '迈向云路' },
+      { id: 'later', label: '再积一点灵露' }
+    ]
+  },
+  {
+    lines: ['云路未名，前方是澄心一跃。', '最后一道考验，仍是一局小拼图。', '过了，便可久久看自己的故事。'],
+    choices: [
+      { id: 'go', label: '完成最后考验' },
+      { id: 'later', label: '再读一遍见闻' }
+    ]
+  }
+];
+
+const PLACES = [
+  { id: 'creek', name: '后山溪', sec: 18, loot: ['青石子', '溪边草', '冰凉的卵石'] },
+  { id: 'well', name: '邻村井台', sec: 28, loot: ['井绳结', '晒干荷叶', '半块麦饼'] },
+  { id: 'tea', name: '城东茶摊', sec: 40, loot: ['茶渣纸包', '路人字条', '一颗糖'] },
+  { id: 'reef', name: '海边礁石', sec: 55, loot: ['咸风贝壳', '湿沙一撮', '远帆剪影'] },
+  { id: 'cloud', name: '不知何处', sec: 75, loot: ['白云絮', '无人地图角', '一声雁叫'] }
+];
+
+const SIGHTS = [
+  '路上遇到一只更小的蛙，对视三秒，各自走开。',
+  '风很大，荷叶当伞，还是湿了脑门。',
+  '有人在岸边钓鱼，它蹲着看了一下午，一条没见。',
+  '月亮跟了一路，像认识很久。',
+  '带回一点雨味，说不清是哪座山的。',
+  '在井台听人聊天，一句也没听懂，觉得热闹。'
+];
+
+let state = load();
+let hits = [];
+let toast = '';
+let toastUntil = 0;
+let overlay = null;
+/** null | 'story' | 'puzzle' */
+let scene = null;
+let puzzle = null;
+let lastFrame = Date.now();
+
+function load() {
+  try {
+    const raw = readStore(SAVE_KEY);
+    if (raw && typeof raw === 'object') {
+      raw.lastTick = raw.lastTick || Date.now();
+      return raw;
+    }
+  } catch (e) {}
+  return {
+    realm: 0,
+    dew: 0,
+    lotus: 0,
+    lastTick: Date.now(),
+    traveling: null,
+    bag: [],
+    log: ['塘边湿泥，可以开始吐纳。'],
+    totalTuna: 0,
+    storyRead: []
+  };
+}
+
+function save() {
+  state.lastTick = Date.now();
+  try {
+    writeStore(SAVE_KEY, state);
+  } catch (e) {}
+}
+
+function pushLog(line) {
+  state.log.unshift(line);
+  if (state.log.length > 12) state.log.pop();
+}
+
+function showToast(t) {
+  toast = t;
+  toastUntil = Date.now() + 1600;
+}
+
+function realm() {
+  return REALMS[Math.min(state.realm, REALMS.length - 1)];
+}
+
+function atHome() {
+  return !state.traveling;
+}
+
+function tick(now) {
+  let elapsed = Math.max(0, (now - state.lastTick) / 1000);
+  if (elapsed > 8 * 3600) elapsed = 8 * 3600;
+  state.lastTick = now;
+
+  if (scene) return;
+
+  if (state.traveling) {
+    if (now >= state.traveling.backAt) finishTravel();
+    return;
+  }
+
+  const r = realm();
+  if (r.need > 0) {
+    state.dew += elapsed * r.idle;
+    if (state.dew > r.need) state.dew = r.need;
+  } else {
+    state.dew += elapsed * r.idle;
+  }
+}
+
+function tuna() {
+  if (!atHome()) {
+    showToast('蛙不在家');
+    return;
+  }
+  const r = realm();
+  const gain = 3 + r.idle * 1.4;
+  state.dew += gain;
+  state.totalTuna += 1;
+  if (r.need > 0 && state.dew > r.need) state.dew = r.need;
+  showToast('+' + gain.toFixed(1) + ' 灵露');
+  save();
+}
+
+function breakthrough() {
+  if (!atHome()) {
+    showToast('蛙不在家');
+    return;
+  }
+  const r = realm();
+  if (!r.need) {
+    showToast('已是澄心一跃');
+    return;
+  }
+  if (state.dew < r.need) {
+    showToast('灵露未满');
+    return;
+  }
+  overlay = null;
+  scene = 'story';
+  const story = BREAK_STORIES[Math.min(state.realm, BREAK_STORIES.length - 1)];
+  if (!state.storyRead) state.storyRead = [];
+  if (state.storyRead.indexOf(state.realm) < 0) {
+    state.storyRead.push(state.realm);
+    story.lines.forEach((line) => pushLog(line));
+  }
+  save();
+}
+
+function startPuzzle() {
+  scene = 'puzzle';
+  puzzle = makePuzzle(3);
+}
+
+function makePuzzle(n) {
+  const size = n * n;
+  const tiles = [];
+  for (let i = 0; i < size - 1; i++) tiles.push(i);
+  tiles.push(null);
+  // shuffle with even permutations (solvable)
+  for (let k = 0; k < 40; k++) {
+    const empty = tiles.indexOf(null);
+    const er = Math.floor(empty / n);
+    const ec = empty % n;
+    const opts = [];
+    if (er > 0) opts.push(empty - n);
+    if (er < n - 1) opts.push(empty + n);
+    if (ec > 0) opts.push(empty - 1);
+    if (ec < n - 1) opts.push(empty + 1);
+    const swap = opts[Math.floor(Math.random() * opts.length)];
+    tiles[empty] = tiles[swap];
+    tiles[swap] = null;
+  }
+  return { n, tiles, moves: 0 };
+}
+
+function puzzleSolved(p) {
+  for (let i = 0; i < p.tiles.length - 1; i++) {
+    if (p.tiles[i] !== i) return false;
+  }
+  return p.tiles[p.tiles.length - 1] === null;
+}
+
+function tapPuzzle(index) {
+  if (!puzzle) return;
+  const n = puzzle.n;
+  const empty = puzzle.tiles.indexOf(null);
+  const er = Math.floor(empty / n);
+  const ec = empty % n;
+  const tr = Math.floor(index / n);
+  const tc = index % n;
+  if (Math.abs(er - tr) + Math.abs(ec - tc) !== 1) return;
+  puzzle.tiles[empty] = puzzle.tiles[index];
+  puzzle.tiles[index] = null;
+  puzzle.moves += 1;
+  if (puzzleSolved(puzzle)) finishBreakthrough();
+}
+
+function finishBreakthrough() {
+  state.dew = 0;
+  state.realm += 1;
+  const name = realm().name;
+  pushLog('破境成功：' + name);
+  showToast(name);
+  scene = null;
+  puzzle = null;
+  save();
+}
+
+function cancelBreakthrough() {
+  scene = null;
+  puzzle = null;
+  showToast('灵露还在，改日再破');
+}
+
+function startTravel(place) {
+  if (!atHome()) return;
+  state.traveling = {
+    id: place.id,
+    name: place.name,
+    backAt: Date.now() + place.sec * 1000
+  };
+  overlay = null;
+  pushLog('出门：' + place.name);
+  showToast('蛙去了' + place.name);
+  save();
+}
+
+function finishTravel() {
+  const t = state.traveling;
+  if (!t) return;
+  const place = PLACES.find((p) => p.id === t.id) || PLACES[0];
+  const loot = place.loot[Math.floor(Math.random() * place.loot.length)];
+  const sight = SIGHTS[Math.floor(Math.random() * SIGHTS.length)];
+  const lotus = 4 + Math.floor(Math.random() * 9) + state.realm;
+  state.lotus += lotus;
+  state.bag.unshift({ name: loot, from: place.name, note: sight, t: Date.now() });
+  if (state.bag.length > 20) state.bag.pop();
+  state.traveling = null;
+  pushLog('归来：' + loot + ' · 莲子+' + lotus);
+  pushLog(sight);
+  showToast('蛙回来了');
+  save();
+}
+
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function button(id, x, y, w, h, label, fill, muted) {
+  hits.push({ id, x, y, w, h });
+  ctx.fillStyle = muted ? '#3d4f46' : fill;
+  roundRect(x, y, w, h, 12 * PX);
+  ctx.fill();
+  ctx.fillStyle = muted ? '#8aa396' : '#f4fff8';
+  ctx.font = 'bold ' + Math.floor(15 * PX) + 'px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(label, x + w / 2, y + h / 2);
+}
+
+function drawFrog(cx, cy, gone) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  if (gone) ctx.globalAlpha = 0.25;
+  ctx.fillStyle = '#3d7a4a';
+  ctx.beginPath();
+  ctx.ellipse(0, 18 * PX, 54 * PX, 36 * PX, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(0, -8 * PX, 40 * PX, 32 * PX, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#2b5534';
+  ctx.beginPath();
+  ctx.arc(-18 * PX, -22 * PX, 12 * PX, 0, Math.PI * 2);
+  ctx.arc(18 * PX, -22 * PX, 12 * PX, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#e8f6c8';
+  ctx.beginPath();
+  ctx.arc(-18 * PX, -22 * PX, 6 * PX, 0, Math.PI * 2);
+  ctx.arc(18 * PX, -22 * PX, 6 * PX, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#1a2e1c';
+  ctx.beginPath();
+  ctx.arc(-18 * PX, -22 * PX, 2.6 * PX, 0, Math.PI * 2);
+  ctx.arc(18 * PX, -22 * PX, 2.6 * PX, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#1a2e1c';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(0, -2 * PX, 10 * PX, 0.15 * Math.PI, 0.85 * Math.PI);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawHome() {
+  hits = [];
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#0c1f18');
+  g.addColorStop(0.45, '#163528');
+  g.addColorStop(1, '#0a1612');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.fillStyle = '#d7f3c8';
+  ctx.font = 'bold ' + Math.floor(20 * PX) + 'px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('青蛙修仙', W / 2, 36 * PX);
+
+  ctx.fillStyle = '#9fceb0';
+  ctx.font = Math.floor(12 * PX) + 'px sans-serif';
+  ctx.fillText(atHome() ? '塘边挂机中' : '屋里空着', W / 2, 56 * PX);
+
+  const r = realm();
+  ctx.fillStyle = '#eefbe6';
+  ctx.font = 'bold ' + Math.floor(18 * PX) + 'px sans-serif';
+  ctx.fillText(r.name, W / 2, 86 * PX);
+
+  const barW = W - 48 * PX;
+  const barX = 24 * PX;
+  const barY = 100 * PX;
+  ctx.fillStyle = '#1b3328';
+  roundRect(barX, barY, barW, 14 * PX, 7 * PX);
+  ctx.fill();
+  const ratio = r.need ? Math.min(1, state.dew / r.need) : 1;
+  ctx.fillStyle = '#7fd39a';
+  roundRect(barX, barY, Math.max(8 * PX, barW * ratio), 14 * PX, 7 * PX);
+  ctx.fill();
+
+  ctx.fillStyle = '#c5e6d0';
+  ctx.font = Math.floor(12 * PX) + 'px sans-serif';
+  ctx.fillText(
+    r.need ? '灵露 ' + state.dew.toFixed(0) + ' / ' + r.need : '灵露 ' + state.dew.toFixed(0),
+    W / 2,
+    128 * PX
+  );
+  ctx.fillText('莲子 ' + state.lotus + '    吐纳 ' + state.totalTuna + ' 次', W / 2, 148 * PX);
+
+  drawFrog(W / 2, 230 * PX, !atHome());
+
+  if (!atHome()) {
+    const left = Math.max(0, Math.ceil((state.traveling.backAt - Date.now()) / 1000));
+    ctx.fillStyle = '#f3e3b0';
+    ctx.font = Math.floor(14 * PX) + 'px sans-serif';
+    ctx.fillText('去了' + state.traveling.name + '  ·  ' + left + 's', W / 2, 300 * PX);
+  } else {
+    ctx.fillStyle = '#b7d8c2';
+    ctx.font = Math.floor(13 * PX) + 'px sans-serif';
+    ctx.fillText('闲着也在吐纳  ·  ' + r.idle.toFixed(1) + ' / 秒', W / 2, 300 * PX);
+  }
+
+  const bw = (W - 52 * PX) / 3;
+  const bh = 46 * PX;
+  const by = 328 * PX;
+  const muted = !atHome();
+  button('tuna', 16 * PX, by, bw, bh, '吐纳', '#2f7a4a', muted);
+  button('break', 16 * PX + bw + 10 * PX, by, bw, bh, '破境', '#3b6d8a', muted);
+  button('go', 16 * PX + (bw + 10 * PX) * 2, by, bw, bh, '出门', '#8a6230', muted);
+
+  button('bag', 16 * PX, by + bh + 12 * PX, (W - 42 * PX) / 2, 40 * PX, '行囊 ' + state.bag.length, '#2a4036', false);
+  button('log', 26 * PX + (W - 42 * PX) / 2, by + bh + 12 * PX, (W - 42 * PX) / 2, 40 * PX, '见闻', '#2a4036', false);
+
+  const listY = by + bh + 64 * PX;
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#8fb69c';
+  ctx.font = Math.floor(12 * PX) + 'px sans-serif';
+  state.log.slice(0, 6).forEach((line, i) => {
+    const t = line.length > 22 ? line.slice(0, 22) + '…' : line;
+    ctx.fillText(t, 22 * PX, listY + i * 20 * PX);
+  });
+
+  drawToast();
+}
+
+function drawToast() {
+  if (Date.now() >= toastUntil) return;
+  ctx.fillStyle = 'rgba(10,20,14,0.82)';
+  roundRect(W * 0.18, H * 0.42, W * 0.64, 44 * PX, 12 * PX);
+  ctx.fill();
+  ctx.fillStyle = '#f4fff8';
+  ctx.textAlign = 'center';
+  ctx.font = Math.floor(14 * PX) + 'px sans-serif';
+  ctx.fillText(toast, W / 2, H * 0.42 + 24 * PX);
+}
+
+function drawOverlay() {
+  ctx.fillStyle = 'rgba(0,0,0,0.55)';
+  ctx.fillRect(0, 0, W, H);
+  const panelH = overlay === 'go' ? 420 * PX : 460 * PX;
+  const y0 = (H - panelH) / 2;
+  ctx.fillStyle = '#14241c';
+  roundRect(24 * PX, y0, W - 48 * PX, panelH, 16 * PX);
+  ctx.fill();
+
+  ctx.fillStyle = '#e7f8ea';
+  ctx.font = 'bold ' + Math.floor(18 * PX) + 'px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(overlay === 'go' ? '去哪儿' : overlay === 'bag' ? '行囊' : '见闻', W / 2, y0 + 36 * PX);
+
+  button('close', W - 88 * PX, y0 + 16 * PX, 52 * PX, 32 * PX, '关闭', '#3a5246', false);
+
+  if (overlay === 'go') {
+    PLACES.forEach((p, i) => {
+      const y = y0 + 64 * PX + i * 58 * PX;
+      button('place:' + p.id, 40 * PX, y, W - 80 * PX, 50 * PX, p.name + '  ' + p.sec + '秒', '#2c5a40', !atHome());
+    });
+    return;
+  }
+
+  ctx.textAlign = 'left';
+  ctx.font = Math.floor(13 * PX) + 'px sans-serif';
+  ctx.fillStyle = '#c9e6d2';
+  const items = overlay === 'bag' ? state.bag : state.log.map((n) => ({ name: n }));
+  if (!items.length) {
+    ctx.textAlign = 'center';
+    ctx.fillText('还是空的', W / 2, y0 + 120 * PX);
+    return;
+  }
+  items.slice(0, 8).forEach((it, i) => {
+    const y = y0 + 70 * PX + i * 44 * PX;
+    const title = it.from ? it.name + ' · ' + it.from : it.name;
+    ctx.fillText(title.length > 20 ? title.slice(0, 20) + '…' : title, 44 * PX, y);
+    if (it.note) {
+      ctx.fillStyle = '#87a894';
+      ctx.font = Math.floor(11 * PX) + 'px sans-serif';
+      ctx.fillText(it.note.length > 22 ? it.note.slice(0, 22) + '…' : it.note, 44 * PX, y + 18 * PX);
+      ctx.fillStyle = '#c9e6d2';
+      ctx.font = Math.floor(13 * PX) + 'px sans-serif';
+    }
+  });
+}
+
+function drawStory() {
+  hits = [];
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#0c1420');
+  g.addColorStop(1, '#0a1612');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.fillStyle = '#d7f3c8';
+  ctx.font = 'bold ' + Math.floor(20 * PX) + 'px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('青蛙修仙', W / 2, 40 * PX);
+
+  ctx.fillStyle = '#c8d8f0';
+  ctx.font = 'bold ' + Math.floor(18 * PX) + 'px sans-serif';
+  ctx.fillText('破境考验', W / 2, 68 * PX);
+
+  ctx.fillStyle = '#9fb0c8';
+  ctx.font = Math.floor(12 * PX) + 'px sans-serif';
+  ctx.fillText('灵露已满 · 通过考验方可升境', W / 2, 92 * PX);
+
+  const story = BREAK_STORIES[Math.min(state.realm, BREAK_STORIES.length - 1)];
+  ctx.fillStyle = '#141c28';
+  roundRect(24 * PX, 120 * PX, W - 48 * PX, 160 * PX, 14 * PX);
+  ctx.fill();
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#d2e1f0';
+  ctx.font = Math.floor(14 * PX) + 'px sans-serif';
+  story.lines.forEach((line, i) => {
+    ctx.fillText(line, 40 * PX, 155 * PX + i * 36 * PX);
+  });
+
+  story.choices.forEach((c, i) => {
+    const y = 320 * PX + i * 70 * PX;
+    button('story:' + c.id, 40 * PX, y, W - 80 * PX, 56 * PX, c.label, i === 0 ? '#2d5a46' : '#324a64', false);
+  });
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#6a8a78';
+  ctx.font = Math.floor(12 * PX) + 'px sans-serif';
+  ctx.fillText('通过考验 → 升入下一境界', W / 2, 480 * PX);
+}
+
+function drawPuzzle() {
+  hits = [];
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#0c1420');
+  g.addColorStop(1, '#0a1612');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.fillStyle = '#d7f3c8';
+  ctx.font = 'bold ' + Math.floor(20 * PX) + 'px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('青蛙修仙', W / 2, 40 * PX);
+  ctx.fillStyle = '#c8d8f0';
+  ctx.font = 'bold ' + Math.floor(16 * PX) + 'px sans-serif';
+  ctx.fillText('考验：拼回荷叶图', W / 2, 72 * PX);
+  ctx.fillStyle = '#9fb0c8';
+  ctx.font = Math.floor(12 * PX) + 'px sans-serif';
+  ctx.fillText('点按相邻块复原画面 · 步数 ' + (puzzle ? puzzle.moves : 0), W / 2, 96 * PX);
+
+  if (!puzzle) return;
+  const n = puzzle.n;
+  const gap = 8 * PX;
+  const cell = Math.min(70 * PX, (W - 80 * PX - (n - 1) * gap) / n);
+  const gridW = n * cell + (n - 1) * gap;
+  const gx = (W - gridW) / 2;
+  const gy = 130 * PX;
+  const greens = ['#5aa064', '#468c5a', '#64b478', '#3c784f', '#6ebe82', '#508f5f', '#326e46', '#5fac73'];
+
+  for (let i = 0; i < puzzle.tiles.length; i++) {
+    const r = Math.floor(i / n);
+    const c = i % n;
+    const x = gx + c * (cell + gap);
+    const y = gy + r * (cell + gap);
+    const v = puzzle.tiles[i];
+    if (v === null) {
+      ctx.fillStyle = '#1e2836';
+      roundRect(x, y, cell, cell, 10);
+      ctx.fill();
+      ctx.strokeStyle = '#506478';
+      ctx.lineWidth = 2;
+      roundRect(x, y, cell, cell, 10);
+      ctx.stroke();
+    } else {
+      hits.push({ id: 'tile:' + i, x, y, w: cell, h: cell });
+      ctx.fillStyle = greens[v % greens.length];
+      roundRect(x, y, cell, cell, 10);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(200,240,180,0.35)';
+      ctx.beginPath();
+      ctx.arc(x + cell / 2, y + cell / 2, cell * 0.22, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#e8f8e0';
+      ctx.font = 'bold ' + Math.floor(16 * PX) + 'px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(String(v + 1), x + cell / 2, y + cell / 2);
+    }
+  }
+
+  const by = gy + n * (cell + gap) + 36 * PX;
+  button('puzzleCancel', 40 * PX, by, W - 80 * PX, 48 * PX, '放弃考验（灵露保留）', '#3a4a5a', false);
+  ctx.fillStyle = '#6a8a78';
+  ctx.font = Math.floor(12 * PX) + 'px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('青蛙修仙 · H5 版', W / 2, by + 80 * PX);
+}
+
+function tap(x, y) {
+  const hit = hits.find((b) => x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h);
+  if (!hit) return;
+
+  if (scene === 'story') {
+    if (hit.id === 'story:go') startPuzzle();
+    else if (hit.id === 'story:later') cancelBreakthrough();
+    return;
+  }
+
+  if (scene === 'puzzle') {
+    if (hit.id === 'puzzleCancel') {
+      cancelBreakthrough();
+      return;
+    }
+    if (hit.id.indexOf('tile:') === 0) {
+      tapPuzzle(parseInt(hit.id.slice(5), 10));
+    }
+    return;
+  }
+
+  if (hit.id === 'close') {
+    overlay = null;
+    return;
+  }
+  if (hit.id.indexOf('place:') === 0) {
+    const id = hit.id.slice(6);
+    const place = PLACES.find((p) => p.id === id);
+    if (place) startTravel(place);
+    return;
+  }
+  if (overlay) return;
+  if (hit.id === 'tuna') tuna();
+  else if (hit.id === 'break') breakthrough();
+  else if (hit.id === 'go') {
+    if (atHome()) overlay = 'go';
+    else showToast('蛙还在路上');
+  } else if (hit.id === 'bag') overlay = 'bag';
+  else if (hit.id === 'log') overlay = 'log';
+}
+
+/* ---------- 输入：触屏 + 鼠标 ---------- */
+function pointFrom(e, useChanged) {
+  const r = canvas.getBoundingClientRect();
+  const t = useChanged ? e.changedTouches[0] : e.touches[0];
+  tap(t.clientX - r.left, t.clientY - r.top);
+}
+canvas.addEventListener('touchstart', function (e) {
+  pointFrom(e, true);
+  e.preventDefault();
+}, { passive: false });
+canvas.addEventListener('mousedown', function (e) {
+  const r = canvas.getBoundingClientRect();
+  tap(e.clientX - r.left, e.clientY - r.top);
+});
+
+function loop() {
+  const now = Date.now();
+  const dt = now - lastFrame;
+  lastFrame = now;
+  if (dt > 0) tick(now);
+
+  if (scene === 'story') drawStory();
+  else if (scene === 'puzzle') drawPuzzle();
+  else {
+    drawHome();
+    if (overlay) drawOverlay();
+  }
+
+  requestAnimationFrame(loop);
+}
+
+tick(Date.now());
+save();
+loop();
+setInterval(save, 5000);
+document.addEventListener('visibilitychange', function () {
+  if (document.hidden) save();
+});
+window.addEventListener('beforeunload', save);
+</script>
+</body>
+</html>
