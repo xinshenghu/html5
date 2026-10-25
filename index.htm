@@ -86,6 +86,7 @@ a{text-decoration:none;color:inherit}
 .mini.tools h3{color:var(--brand)}
 .mini.books h3{color:var(--violet)}
 .mini.life h3{color:var(--green)}
+.mini.wish h3{color:var(--amber)}
 
 /* ---------- 页脚 ---------- */
 footer{border-top:1px solid var(--line);margin-top:40px;background:#fff}
@@ -234,13 +235,40 @@ body.classic #classic-view{display:flex}
         <span class="go">在线体验 <span>→</span></span>
       </a>
 
+      <a class="card" href="许愿/故宫漫游/index.html" target="_blank" rel="noopener">
+        <span class="badge">许愿</span>
+        <div class="ico">🏯</div>
+        <h3>紫禁城漫游</h3>
+        <p>Three.js 中轴十组宫殿 + 金水桥、飞鸟飘旗、宫城小地图。WASD 第一人称漫游，支持一键自动巡游。</p>
+        <div class="tags"><span class="tag">Three.js</span><span class="tag">3D</span><span class="tag">许愿 Demo</span></div>
+        <span class="go">在线体验 <span>→</span></span>
+      </a>
+
+      <a class="card" href="许愿/霓虹赛车/index.html" target="_blank" rel="noopener">
+        <span class="badge">许愿</span>
+        <div class="ico">🏎️</div>
+        <h3>霓虹环道</h3>
+        <p>霓虹夜景环形赛道：加速漂移、撞墙减速惩罚、单圈计时与三圈完赛，粉青撞色 HUD + 小地图。</p>
+        <div class="tags"><span class="tag">Three.js</span><span class="tag">竞速</span><span class="tag">许愿 Demo</span></div>
+        <span class="go">在线体验 <span>→</span></span>
+      </a>
+
     </div>
   </section>
 
   <!-- 全部项目 -->
   <section class="section" id="all">
-    <div class="sec-head"><h2>📚 全部项目</h2><span class="tip">四大分类，点击直达</span></div>
+    <div class="sec-head"><h2>📚 全部项目</h2><span class="tip">五大分类，点击直达</span></div>
     <div class="grid all">
+
+      <div class="mini wish">
+        <h3>✨ 许愿（2）</h3>
+        <ul>
+          <li><a href="许愿/index.html" target="_blank"><span class="e">✨</span>许愿目录</a></li>
+          <li><a href="许愿/故宫漫游/index.html" target="_blank"><span class="e">🏯</span>紫禁城漫游（Three.js）</a></li>
+          <li><a href="许愿/霓虹赛车/index.html" target="_blank"><span class="e">🏎️</span>霓虹环道（Three.js）</a></li>
+        </ul>
+      </div>
 
       <div class="mini games">
         <h3>🎮 游戏娱乐（12）</h3>
@@ -322,6 +350,14 @@ body.classic #classic-view{display:flex}
     <div class="cv-side">
       <div class="tree">
         <ul>
+          <li>
+            <div class="folder" onclick="toggleFolder(this)">✨ 许愿</div>
+            <ul>
+              <li><div class="file" onclick="openLink('许愿/index.html', '许愿目录')">✨ 许愿目录</div></li>
+              <li><div class="file" onclick="openLink('许愿/故宫漫游/index.html', '紫禁城漫游')">🏯 紫禁城漫游</div></li>
+              <li><div class="file" onclick="openLink('许愿/霓虹赛车/index.html', '霓虹环道')">🏎️ 霓虹环道</div></li>
+            </ul>
+          </li>
           <li>
             <div class="folder" onclick="toggleFolder(this)">🔧 工具类</div>
             <ul>

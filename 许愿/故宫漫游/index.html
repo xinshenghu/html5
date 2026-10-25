@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>紫禁城漫游 · Forbidden City</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #140c10; font-family: "Songti SC", "STSong", "SimSun", "Microsoft YaHei", serif; }
+    #c { display: block; width: 100%; height: 100%; }
+    #hud { position: fixed; inset: 0; pointer-events: none; color: #f3e2c0; text-shadow: 0 1px 4px rgba(0,0,0,.8); }
+    #stamp {
+      position: absolute; top: 18px; left: 18px; width: 92px; height: 92px;
+      border: 3px solid #c43c2c; color: #c43c2c; border-radius: 6px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      transform: rotate(-8deg); background: rgba(255,248,235,.08); font-weight: 700;
+      box-shadow: 0 0 0 1px rgba(196,60,44,.35) inset;
+    }
+    #stamp .cn { font-size: 20px; letter-spacing: .15em; line-height: 1.15; }
+    #stamp .en { font-size: 7px; letter-spacing: .04em; margin-top: 4px; opacity: .9; text-align: center; max-width: 78px; font-family: Georgia, serif; }
+    #stamp .yr { font-size: 10px; margin-top: 2px; letter-spacing: .2em; }
+    #place {
+      position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+      font-size: 20px; letter-spacing: .28em; padding: 10px 22px;
+      background: linear-gradient(180deg, rgba(110,20,20,.72), rgba(60,10,10,.62));
+      border: 1px solid rgba(212,175,55,.55); border-radius: 2px;
+    }
+    #place small { display: block; font-size: 11px; letter-spacing: .12em; opacity: .75; margin-top: 4px; font-family: Georgia, serif; }
+    #hint {
+      position: absolute; left: 16px; bottom: 16px; font-size: 12px; line-height: 1.75;
+      background: rgba(0,0,0,.45); padding: 10px 14px; border-radius: 6px; max-width: 300px;
+      font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+    }
+    #minimap-wrap {
+      position: absolute; right: 16px; top: 16px; width: 132px; height: 220px;
+      background: rgba(20,8,8,.55); border: 1px solid rgba(212,175,55,.45); border-radius: 4px;
+      overflow: hidden;
+    }
+    #minimap-wrap .label {
+      position: absolute; top: 4px; left: 0; right: 0; text-align: center;
+      font-size: 10px; letter-spacing: .2em; color: #d4af37; z-index: 2;
+      font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+    }
+    #minimap { width: 100%; height: 100%; display: block; }
+    #tour-btn, #back-link {
+      position: fixed; pointer-events: auto; z-index: 5;
+      background: rgba(90,18,18,.8); color: #f5e6c8; border: 1px solid rgba(212,175,55,.55);
+      padding: 10px 16px; border-radius: 6px; cursor: pointer; font-size: 13px;
+      font-family: "Segoe UI", "Microsoft YaHei", sans-serif; text-decoration: none;
+    }
+    #tour-btn { right: 16px; bottom: 16px; }
+    #back-link { left: 16px; bottom: 88px; }
+    #tour-btn:hover, #back-link:hover { background: rgba(120,28,28,.9); }
+    #click-overlay {
+      position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+      background: radial-gradient(ellipse at center, rgba(60,15,15,.75), rgba(10,5,8,.88));
+      color: #f5e6c8; pointer-events: auto; cursor: pointer; z-index: 10;
+    }
+    #click-overlay.hidden { display: none; }
+    #click-overlay .box {
+      text-align: center; padding: 36px 44px; border: 1px solid rgba(212,175,55,.55);
+      background: rgba(70,14,14,.7); box-shadow: 0 12px 40px rgba(0,0,0,.45);
+    }
+    #click-overlay h1 { font-size: 28px; margin-bottom: 12px; letter-spacing: .35em; color: #d4af37; }
+    #click-overlay p { font-size: 14px; opacity: .9; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; letter-spacing: .08em; }
+  </style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <div id="hud">
+    <div id="stamp">
+      <div class="cn">紫禁城</div>
+      <div class="en">THE FORBIDDEN CITY</div>
+      <div class="yr">1420</div>
+    </div>
+    <div id="place">午门<small>Meridian Gate</small></div>
+    <div id="minimap-wrap">
+      <div class="label">宫城图</div>
+      <canvas id="minimap" width="132" height="220"></canvas>
+    </div>
+    <div id="hint">
+      点击画面锁定鼠标<br>
+      WASD 走动 · 鼠标环视 · Shift 疾行 · R 回午门<br>
+      Esc 释放鼠标
+    </div>
+  </div>
+  <a id="back-link" href="../index.html">← 许愿目录</a>
+  <button id="tour-btn" type="button">自动巡游</button>
+  <div id="click-overlay">
+    <div class="box">
+      <h1>紫禁城漫游</h1>
+      <p>点击开始 · 沿中轴从午门至神武门</p>
+    </div>
+  </div>
+
+  <script type="importmap">
+  { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js" } }
+  </script>
+  <script type="module">
+import * as THREE from 'three';
+
+const canvas = document.getElementById('c');
+const placeEl = document.getElementById('place');
+const overlay = document.getElementById('click-overlay');
+const tourBtn = document.getElementById('tour-btn');
+const minimap = document.getElementById('minimap');
+const mctx = minimap.getContext('2d');
+
+const params = new URLSearchParams(location.search);
+const autoDemo = params.get('demo') === '1';
+
+const C = {
+  red: 0x9c1f1f, redDark: 0x6a1212, redDeep: 0x4a0c0c,
+  gold: 0xd4a017, goldDark: 0x9a7010, goldBright: 0xe8c040,
+  stone: 0xa39b8c, stoneLight: 0xc4bba8, white: 0xefe6d6,
+  wood: 0x3d2412, woodLight: 0x5c3a1e, green: 0x5d6e42,
+  skyTop: 0x6a8eb8, skyBot: 0xc8d8ea,
+};
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0xb8c8d8, 0.0032);
+
+// Gradient sky via large hemisphere-ish backdrop
+{
+  const skyGeo = new THREE.SphereGeometry(400, 32, 16);
+  const skyMat = new THREE.ShaderMaterial({
+    side: THREE.BackSide,
+    uniforms: {
+      top: { value: new THREE.Color(C.skyTop) },
+      bot: { value: new THREE.Color(C.skyBot) },
+    },
+    vertexShader: `varying vec3 vP; void main(){ vP=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }`,
+    fragmentShader: `uniform vec3 top; uniform vec3 bot; varying vec3 vP; void main(){ float h=clamp(vP.y/180.+.35,0.,1.); gl_FragColor=vec4(mix(bot,top,h),1.); }`,
+  });
+  scene.add(new THREE.Mesh(skyGeo, skyMat));
+}
+
+const camera = new THREE.PerspectiveCamera(68, innerWidth / innerHeight, 0.1, 600);
+const START = new THREE.Vector3(0, 1.75, 118);
+camera.position.copy(START);
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+
+scene.add(new THREE.HemisphereLight(0xdde8ff, 0x5a4030, 0.5));
+scene.add(new THREE.AmbientLight(0xfff5e6, 0.28));
+const sun = new THREE.DirectionalLight(0xfff0d0, 1.25);
+sun.position.set(55, 110, 40);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left: -160, right: 160, top: 160, bottom: -160, near: 10, far: 320 });
+scene.add(sun);
+const fill = new THREE.DirectionalLight(0x88aacc, 0.25);
+fill.position.set(-40, 40, -20);
+scene.add(fill);
+
+const colliders = [];
+const flags = [];
+const birds = [];
+const clouds = [];
+const places = [];
+
+function std(color, extras = {}) {
+  return new THREE.MeshStandardMaterial({ color, roughness: extras.r ?? 0.82, metalness: extras.m ?? 0.04, ...extras });
+}
+
+function addBox(w, h, d, color, x, y, z, opt = {}) {
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), std(color, opt));
+  mesh.position.set(x, y, z);
+  mesh.castShadow = opt.cast !== false;
+  mesh.receiveShadow = true;
+  (opt.parent || scene).add(mesh);
+  if (opt.collide) {
+    colliders.push(new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(x, y, z), new THREE.Vector3(w * 0.95, h, d * 0.95)));
+  }
+  return mesh;
+}
+
+function hipRoof(w, d, h, x, y, z, parent) {
+  // Four-sided hip roof approximated with stretched cone + ridge
+  const group = new THREE.Group();
+  const cone = new THREE.Mesh(
+    new THREE.ConeGeometry(1, h, 4),
+    std(C.gold, { r: 0.45, m: 0.25 })
+  );
+  cone.rotation.y = Math.PI / 4;
+  cone.scale.set(w * 0.78, 1, d * 0.78);
+  cone.position.y = h / 2;
+  cone.castShadow = true;
+  group.add(cone);
+  // eave slab
+  const eave = new THREE.Mesh(
+    new THREE.BoxGeometry(w, 0.28, d),
+    std(C.goldDark, { r: 0.5, m: 0.2 })
+  );
+  eave.position.y = 0.1;
+  eave.castShadow = true;
+  group.add(eave);
+  // ridge ornaments
+  for (const sx of [-w * 0.28, w * 0.28]) {
+    const fin = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.7, 0.35), std(C.goldBright, { r: 0.4, m: 0.3 }));
+    fin.position.set(sx, h * 0.85, 0);
+    group.add(fin);
+  }
+  group.position.set(x, y, z);
+  (parent || scene).add(group);
+  return group;
+}
+
+function railing(parent, w, localZ, y) {
+  const rail = new THREE.Mesh(new THREE.BoxGeometry(w, 0.18, 0.18), std(C.white));
+  rail.position.set(0, y, localZ);
+  parent.add(rail);
+  const posts = Math.max(4, Math.floor(w / 3));
+  for (let i = 0; i < posts; i++) {
+    const x = -w / 2 + (i / (posts - 1)) * w;
+    const post = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.55, 0.16), std(C.white));
+    post.position.set(x, y - 0.2, localZ);
+    parent.add(post);
+  }
+}
+
+function addFlag(x, y, z) {
+  const pole = addBox(0.12, 5.5, 0.12, C.wood, x, y + 2.75, z, { cast: false });
+  const cloth = new THREE.Mesh(
+    new THREE.PlaneGeometry(1.6, 1.0, 8, 4),
+    new THREE.MeshStandardMaterial({ color: C.goldBright, side: THREE.DoubleSide, roughness: 0.7, metalness: 0.1 })
+  );
+  cloth.position.set(x + 0.85, y + 4.6, z);
+  cloth.castShadow = true;
+  scene.add(cloth);
+  flags.push({ mesh: cloth, phase: Math.random() * Math.PI * 2, pole });
+}
+
+function palace({
+  name, en, z, bodyW, bodyD, bodyH, baseH = 1.4, tiers = 1, doubleEave = false, gate = false,
+}) {
+  const g = new THREE.Group();
+  // platform tiers
+  for (let t = 0; t < tiers; t++) {
+    const s = 1 + (tiers - t) * 0.08;
+    const tw = bodyW + 5 * s;
+    const td = bodyD + 5 * s;
+    const th = baseH / tiers;
+    const ty = th * (t + 0.5);
+    const plat = new THREE.Mesh(new THREE.BoxGeometry(tw, th, td), std(C.stone));
+    plat.position.set(0, ty, 0);
+    plat.castShadow = true;
+    plat.receiveShadow = true;
+    g.add(plat);
+    railing(g, tw - 1.2, td / 2 - 0.35, ty + th / 2 + 0.15);
+    railing(g, tw - 1.2, -(td / 2 - 0.35), ty + th / 2 + 0.15);
+  }
+
+  const baseTop = baseH;
+  // main hall
+  const body = new THREE.Mesh(new THREE.BoxGeometry(bodyW, bodyH, bodyD), std(C.red));
+  body.position.set(0, baseTop + bodyH / 2, 0);
+  body.castShadow = true;
+  body.receiveShadow = true;
+  g.add(body);
+
+  // side wings for gate style (午门/神武门)
+  if (gate) {
+    for (const sx of [-bodyW * 0.55, bodyW * 0.55]) {
+      const wing = new THREE.Mesh(new THREE.BoxGeometry(bodyW * 0.28, bodyH * 0.85, bodyD * 1.35), std(C.redDark));
+      wing.position.set(sx, baseTop + bodyH * 0.42, -bodyD * 0.1);
+      wing.castShadow = true;
+      g.add(wing);
+      hipRoof(bodyW * 0.34, bodyD * 1.45, 1.8, sx, baseTop + bodyH * 0.85, -bodyD * 0.1, g);
+    }
+  }
+
+  // columns + doors on south face
+  const colN = Math.min(11, Math.max(5, Math.round(bodyW / 3.2)));
+  for (let i = 0; i < colN; i++) {
+    const cx = -bodyW / 2 + 1.1 + (i / (colN - 1)) * (bodyW - 2.2);
+    const col = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.24, bodyH * 0.9, 8), std(C.woodLight, { r: 0.7 }));
+    col.position.set(cx, baseTop + bodyH * 0.45, bodyD / 2 + 0.15);
+    col.castShadow = true;
+    g.add(col);
+  }
+  // door panels
+  const doorW = bodyW * (gate ? 0.18 : 0.2);
+  const door = new THREE.Mesh(new THREE.BoxGeometry(doorW, bodyH * 0.58, 0.18), std(C.wood));
+  door.position.set(0, baseTop + bodyH * 0.3, bodyD / 2 + 0.2);
+  g.add(door);
+  // door nails
+  for (let r = 0; r < 6; r++) {
+    for (let c = 0; c < 5; c++) {
+      const nail = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 6), std(C.goldBright, { m: 0.5, r: 0.3 }));
+      nail.position.set(-doorW * 0.32 + c * doorW * 0.16, baseTop + bodyH * 0.15 + r * bodyH * 0.08, bodyD / 2 + 0.32);
+      g.add(nail);
+    }
+  }
+  // beam line
+  const beam = new THREE.Mesh(new THREE.BoxGeometry(bodyW + 0.4, 0.45, 0.35), std(C.goldDark, { m: 0.15 }));
+  beam.position.set(0, baseTop + bodyH * 0.88, bodyD / 2 + 0.2);
+  g.add(beam);
+
+  // roofs
+  const roofY = baseTop + bodyH;
+  hipRoof(bodyW + 2.8, bodyD + 2.4, doubleEave ? 2.0 : 2.4, 0, roofY, 0, g);
+  if (doubleEave) {
+    const upper = new THREE.Mesh(new THREE.BoxGeometry(bodyW * 0.82, bodyH * 0.32, bodyD * 0.72), std(C.red));
+    upper.position.set(0, roofY + 1.7, 0);
+    upper.castShadow = true;
+    g.add(upper);
+    hipRoof(bodyW * 0.95, bodyD * 0.85, 1.9, 0, roofY + 1.7 + bodyH * 0.16, 0, g);
+  }
+
+  g.position.set(0, 0, z);
+  scene.add(g);
+
+  // colliders in world space
+  const halfW = (bodyW + 4) / 2;
+  const halfD = (bodyD + 4) / 2;
+  const tall = baseH + bodyH + 3;
+  colliders.push(new THREE.Box3(
+    new THREE.Vector3(-halfW, 0, z - halfD),
+    new THREE.Vector3(halfW, tall, z - halfD * 0.15) // leave south approach more open near door? still block body
+  ));
+  // solid body collider (leave a doorway gap on south for walk-around, not walk-in)
+  colliders.push(new THREE.Box3(
+    new THREE.Vector3(-bodyW / 2, 0, z - bodyD / 2),
+    new THREE.Vector3(bodyW / 2, baseH + bodyH, z + bodyD / 2)
+  ));
+
+  // courtyard flags
+  if (!gate) {
+    addFlag(-bodyW * 0.35, baseH, z + bodyD / 2 + 3.5);
+    addFlag(bodyW * 0.35, baseH, z + bodyD / 2 + 3.5);
+  }
+
+  places.push({ name, en, z, halfW, halfD });
+  return g;
+}
+
+// —— Ground ——
+{
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(260, 420), std(C.green, { r: 1 }));
+  ground.rotation.x = -Math.PI / 2;
+  ground.receiveShadow = true;
+  scene.add(ground);
+
+  const court = new THREE.Mesh(new THREE.PlaneGeometry(78, 340), std(C.stone, { r: 0.95 }));
+  court.rotation.x = -Math.PI / 2;
+  court.position.set(0, 0.02, 10);
+  court.receiveShadow = true;
+  scene.add(court);
+
+  const path = new THREE.Mesh(new THREE.PlaneGeometry(12, 360), std(C.stoneLight, { r: 0.92 }));
+  path.rotation.x = -Math.PI / 2;
+  path.position.set(0, 0.04, 5);
+  path.receiveShadow = true;
+  scene.add(path);
+
+  // path center stones
+  for (let i = 0; i < 40; i++) {
+    addBox(3.5, 0.08, 2.2, C.white, 0, 0.08, 110 - i * 7.5, { cast: false, collide: false });
+  }
+}
+
+// Palace walls
+for (const x of [-48, 48]) {
+  addBox(2.8, 10, 360, C.redDeep, x, 5, 0, { collide: true });
+  addBox(3.4, 1.4, 362, C.goldDark, x, 10.5, 0, { cast: false });
+  // wall battlement nubs
+  for (let i = 0; i < 45; i++) {
+    addBox(1.2, 0.9, 1.5, C.redDark, x, 11.4, 140 - i * 7, { cast: false });
+  }
+}
+// north / south outer wall hints
+addBox(100, 9, 2.5, C.redDeep, 0, 4.5, 145, { collide: true });
+addBox(100, 9, 2.5, C.redDeep, 0, 4.5, -140, { collide: true });
+
+// 外金水桥
+function bridge(x) {
+  addBox(3.2, 0.55, 14, C.stone, x, 0.4, 128, { cast: false });
+  for (const s of [-1, 1]) {
+    addBox(0.22, 1.1, 14, C.white, x + s * 1.45, 1.0, 128, { cast: false });
+    for (let i = 0; i < 7; i++) {
+      addBox(0.28, 0.35, 0.28, C.white, x + s * 1.45, 1.55, 122 + i * 2, { cast: false });
+    }
+  }
+}
+[-8, -4, 0, 4, 8].forEach(bridge);
+// water plane under bridges
+{
+  const water = new THREE.Mesh(
+    new THREE.PlaneGeometry(36, 10),
+    new THREE.MeshStandardMaterial({ color: 0x3a6a78, roughness: 0.2, metalness: 0.4, transparent: true, opacity: 0.85 })
+  );
+  water.rotation.x = -Math.PI / 2;
+  water.position.set(0, 0.06, 128);
+  scene.add(water);
+}
+
+// —— Buildings along axis (south → north, +Z south) ——
+palace({ name: '午门', en: 'Meridian Gate', z: 95, bodyW: 34, bodyD: 12, bodyH: 8, baseH: 2.4, tiers: 2, doubleEave: true, gate: true });
+palace({ name: '太和门', en: 'Gate of Supreme Harmony', z: 62, bodyW: 22, bodyD: 9, bodyH: 6, baseH: 1.6, tiers: 1, doubleEave: false });
+palace({ name: '太和殿', en: 'Hall of Supreme Harmony', z: 28, bodyW: 38, bodyD: 16, bodyH: 10, baseH: 3.2, tiers: 3, doubleEave: true });
+palace({ name: '中和殿', en: 'Hall of Central Harmony', z: 2, bodyW: 18, bodyD: 14, bodyH: 6.5, baseH: 1.8, tiers: 1, doubleEave: false });
+palace({ name: '保和殿', en: 'Hall of Preserving Harmony', z: -22, bodyW: 30, bodyD: 14, bodyH: 8, baseH: 2.2, tiers: 2, doubleEave: true });
+palace({ name: '乾清宫', en: 'Palace of Heavenly Purity', z: -52, bodyW: 26, bodyD: 12, bodyH: 7, baseH: 1.8, tiers: 1, doubleEave: true });
+palace({ name: '交泰殿', en: 'Hall of Union', z: -72, bodyW: 14, bodyD: 14, bodyH: 5.5, baseH: 1.4, tiers: 1, doubleEave: false });
+palace({ name: '坤宁宫', en: 'Palace of Earthly Tranquility', z: -92, bodyW: 24, bodyD: 11, bodyH: 6.5, baseH: 1.6, tiers: 1, doubleEave: true });
+// 御花园 — trees + pavilion
+{
+  places.push({ name: '御花园', en: 'Imperial Garden', z: -112, halfW: 20, halfD: 12 });
+  for (let i = 0; i < 14; i++) {
+    const tx = (i % 2 === 0 ? -1 : 1) * (8 + (i % 5) * 2.5);
+    const tz = -108 - (i % 4) * 4;
+    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.35, 2.2, 6), std(C.wood));
+    trunk.position.set(tx, 1.1, tz);
+    trunk.castShadow = true;
+    scene.add(trunk);
+    const leaf = new THREE.Mesh(new THREE.SphereGeometry(1.8, 8, 8), std(0x3f6b3a, { r: 0.9 }));
+    leaf.position.set(tx, 3.2, tz);
+    leaf.castShadow = true;
+    scene.add(leaf);
+  }
+  // small pavilion
+  addBox(8, 3.5, 8, C.red, 0, 1.75 + 0.8, -118, { collide: true });
+  addBox(10, 0.8, 10, C.stone, 0, 0.4, -118, { collide: false });
+  hipRoof(10, 10, 2.2, 0, 4.3, -118);
+}
+palace({ name: '神武门', en: 'Gate of Divine Prowess', z: -138, bodyW: 28, bodyD: 10, bodyH: 7, baseH: 2, tiers: 1, doubleEave: false, gate: true });
+
+// Side galleries hint
+for (const x of [-32, 32]) {
+  for (let i = 0; i < 8; i++) {
+    const z = 80 - i * 28;
+    addBox(6, 4.5, 18, C.redDark, x, 2.25, z, { collide: true });
+    hipRoof(7.5, 20, 1.5, x, 4.5, z);
+  }
+}
+
+// Clouds
+for (let i = 0; i < 12; i++) {
+  const c = new THREE.Mesh(
+    new THREE.SphereGeometry(8 + Math.random() * 6, 10, 10),
+    new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.45 })
+  );
+  c.scale.set(2.2, 0.4, 1.1);
+  c.position.set((Math.random() - 0.5) * 220, 45 + Math.random() * 25, (Math.random() - 0.5) * 280);
+  scene.add(c);
+  clouds.push({ mesh: c, speed: 0.4 + Math.random() * 0.6 });
+}
+
+// Birds
+function makeBird() {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.5, 4), std(0x222222));
+  body.rotation.x = Math.PI / 2;
+  g.add(body);
+  const wingL = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.22), new THREE.MeshBasicMaterial({ color: 0x1a1a1a, side: THREE.DoubleSide }));
+  const wingR = wingL.clone();
+  wingL.position.set(-0.35, 0, 0);
+  wingR.position.set(0.35, 0, 0);
+  g.add(wingL, wingR);
+  g.position.set((Math.random() - 0.5) * 60, 18 + Math.random() * 12, (Math.random() - 0.5) * 160);
+  scene.add(g);
+  birds.push({
+    mesh: g, wingL, wingR,
+    phase: Math.random() * Math.PI * 2,
+    radius: 25 + Math.random() * 35,
+    height: g.position.y,
+    speed: 0.25 + Math.random() * 0.35,
+    centerZ: g.position.z,
+  });
+}
+for (let i = 0; i < 8; i++) makeBird();
+
+// —— Controls ——
+const keys = Object.create(null);
+let yaw = Math.PI;
+let pitch = -0.05;
+let pointerLocked = false;
+let touring = false;
+let tourT = 0;
+const TOUR_DURATION = 32;
+
+const tourPath = [
+  { pos: [0, 1.75, 118], look: [0, 3, 95] },
+  { pos: [0, 2.0, 108], look: [0, 5, 95] },
+  { pos: [0, 1.75, 78], look: [0, 4, 62] },
+  { pos: [0, 1.75, 48], look: [0, 6, 28] },
+  { pos: [0, 2.2, 18], look: [0, 7, 28] },
+  { pos: [0, 1.75, -5], look: [0, 4, 2] },
+  { pos: [0, 1.75, -35], look: [0, 5, -52] },
+  { pos: [0, 1.75, -65], look: [0, 3.5, -72] },
+  { pos: [0, 1.75, -100], look: [0, 3, -112] },
+  { pos: [0, 1.75, -125], look: [0, 4, -138] },
+  { pos: [0, 2.5, -128], look: [0, 5, -138] },
+];
+
+function lerpTour(t) {
+  const n = tourPath.length - 1;
+  const u = Math.min(1, Math.max(0, t)) * n;
+  const i = Math.min(n - 1, Math.floor(u));
+  const f = u - i;
+  const ease = f * f * (3 - 2 * f);
+  const a = tourPath[i], b = tourPath[i + 1];
+  const pos = new THREE.Vector3().fromArray(a.pos).lerp(new THREE.Vector3().fromArray(b.pos), ease);
+  const look = new THREE.Vector3().fromArray(a.look).lerp(new THREE.Vector3().fromArray(b.look), ease);
+  return { pos, look };
+}
+
+function startTour() {
+  touring = true;
+  tourT = 0;
+  if (document.pointerLockElement) document.exitPointerLock();
+  tourBtn.textContent = '巡游中…';
+}
+function stopTour() {
+  touring = false;
+  tourBtn.textContent = '自动巡游';
+  const dir = new THREE.Vector3();
+  camera.getWorldDirection(dir);
+  yaw = Math.atan2(-dir.x, -dir.z);
+  pitch = Math.asin(THREE.MathUtils.clamp(dir.y, -1, 1));
+}
+
+tourBtn.addEventListener('click', () => (touring ? stopTour() : startTour()));
+window.addEventListener('keydown', (e) => {
+  keys[e.code] = true;
+  if (e.code === 'KeyR' && !touring) {
+    camera.position.copy(START);
+    yaw = Math.PI;
+    pitch = -0.05;
+  }
+});
+window.addEventListener('keyup', (e) => { keys[e.code] = false; });
+
+canvas.addEventListener('click', () => {
+  if (autoDemo || touring) return;
+  canvas.requestPointerLock();
+});
+overlay.addEventListener('click', () => {
+  overlay.classList.add('hidden');
+  if (autoDemo) startTour();
+  else canvas.requestPointerLock();
+});
+document.addEventListener('pointerlockchange', () => {
+  pointerLocked = document.pointerLockElement === canvas;
+});
+document.addEventListener('mousemove', (e) => {
+  if (!pointerLocked || touring) return;
+  yaw -= e.movementX * 0.002;
+  pitch -= e.movementY * 0.002;
+  pitch = THREE.MathUtils.clamp(pitch, -1.25, 1.25);
+});
+
+function nearestPlace(z) {
+  let best = places[0], bestD = Infinity;
+  for (const p of places) {
+    const d = Math.abs(p.z - z);
+    if (d < bestD) { bestD = d; best = p; }
+  }
+  return best;
+}
+
+function tryMove(dx, dz) {
+  const next = camera.position.clone();
+  next.x += dx;
+  next.z += dz;
+  next.x = THREE.MathUtils.clamp(next.x, -44, 44);
+  next.z = THREE.MathUtils.clamp(next.z, -148, 130);
+  const feet = new THREE.Box3(
+    new THREE.Vector3(next.x - 0.4, 0.15, next.z - 0.4),
+    new THREE.Vector3(next.x + 0.4, 1.7, next.z + 0.4)
+  );
+  for (const b of colliders) {
+    if (feet.intersectsBox(b)) return;
+  }
+  camera.position.x = next.x;
+  camera.position.z = next.z;
+}
+
+function drawMinimap() {
+  const w = minimap.width, h = minimap.height;
+  mctx.clearRect(0, 0, w, h);
+  mctx.fillStyle = 'rgba(40,12,12,0.9)';
+  mctx.fillRect(0, 0, w, h);
+  // walls
+  mctx.strokeStyle = '#8b1a1a';
+  mctx.lineWidth = 4;
+  mctx.strokeRect(18, 18, w - 36, h - 36);
+  // path
+  mctx.fillStyle = '#b8b09e';
+  mctx.fillRect(w / 2 - 4, 22, 8, h - 44);
+  // buildings: map world z 145..-145 → y
+  const zMax = 145, zMin = -145;
+  const toY = (z) => 22 + ((zMax - z) / (zMax - zMin)) * (h - 44);
+  const toX = (x) => w / 2 + x * 0.85;
+  for (const p of places) {
+    const y = toY(p.z);
+    const bw = Math.max(10, p.halfW * 1.1);
+    const bh = Math.max(5, p.halfD * 0.7);
+    mctx.fillStyle = '#c9a227';
+    mctx.fillRect(toX(0) - bw / 2, y - bh / 2, bw, bh);
+  }
+  // player
+  const py = toY(camera.position.z);
+  const px = toX(camera.position.x);
+  mctx.fillStyle = '#ff5555';
+  mctx.beginPath();
+  mctx.arc(px, py, 4, 0, Math.PI * 2);
+  mctx.fill();
+  // facing
+  const fx = -Math.sin(yaw) * 10;
+  const fy = Math.cos(yaw) * 10; // screen y increases south visually inverted with toY
+  mctx.strokeStyle = '#ff8888';
+  mctx.beginPath();
+  mctx.moveTo(px, py);
+  mctx.lineTo(px + fx * 0.5, py - (-Math.cos(yaw)) * 8);
+  mctx.stroke();
+}
+
+const clock = new THREE.Clock();
+
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  const t = clock.elapsedTime;
+
+  // animate flags
+  for (const f of flags) {
+    const pos = f.mesh.geometry.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i);
+      const y = pos.getY(i);
+      // base plane is centered; wave along x>0
+      const wave = Math.sin(t * 4 + f.phase + x * 4 + y * 2) * 0.12 * Math.max(0, x + 0.8);
+      pos.setZ(i, wave);
+    }
+    pos.needsUpdate = true;
+    f.mesh.geometry.computeVertexNormals();
+  }
+  // birds
+  for (const b of birds) {
+    b.phase += dt * b.speed;
+    b.mesh.position.x = Math.cos(b.phase) * b.radius;
+    b.mesh.position.z = b.centerZ + Math.sin(b.phase) * b.radius * 0.4;
+    b.mesh.position.y = b.height + Math.sin(b.phase * 2) * 1.5;
+    b.mesh.rotation.y = -b.phase + Math.PI / 2;
+    const flap = Math.sin(t * 10 + b.phase) * 0.6;
+    b.wingL.rotation.z = flap;
+    b.wingR.rotation.z = -flap;
+  }
+  for (const c of clouds) {
+    c.mesh.position.x += c.speed * dt;
+    if (c.mesh.position.x > 140) c.mesh.position.x = -140;
+  }
+
+  if (touring) {
+    tourT += dt;
+    const u = Math.min(1, tourT / TOUR_DURATION);
+    const { pos, look } = lerpTour(u);
+    camera.position.copy(pos);
+    camera.lookAt(look);
+    const p = nearestPlace(camera.position.z);
+    placeEl.innerHTML = `${p.name}<small>${p.en}</small>`;
+    if (u >= 1) {
+      if (autoDemo) placeEl.innerHTML = `神武门<small>Tour complete</small>`;
+      else stopTour();
+    }
+  } else {
+    const speed = (keys.ShiftLeft || keys.ShiftRight ? 16 : 7) * dt;
+    const forward = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
+    const right = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
+    let mx = 0, mz = 0;
+    if (keys.KeyW) { mx += forward.x * speed; mz += forward.z * speed; }
+    if (keys.KeyS) { mx -= forward.x * speed; mz -= forward.z * speed; }
+    if (keys.KeyA) { mx -= right.x * speed; mz -= right.z * speed; }
+    if (keys.KeyD) { mx += right.x * speed; mz += right.z * speed; }
+    if (mx || mz) tryMove(mx, mz);
+    camera.position.y = 1.75;
+    camera.rotation.order = 'YXZ';
+    camera.rotation.y = yaw;
+    camera.rotation.x = pitch;
+    const p = nearestPlace(camera.position.z);
+    placeEl.innerHTML = `${p.name}<small>${p.en}</small>`;
+  }
+
+  drawMinimap();
+  renderer.render(scene, camera);
+}
+
+window.addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+if (autoDemo) {
+  overlay.querySelector('p').textContent = '演示模式 · 自动中轴巡游';
+  setTimeout(() => {
+    overlay.classList.add('hidden');
+    startTour();
+  }, 700);
+}
+
+animate();
+window.__fcReady = true;
+  </script>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>许愿 · AI 一句话生成的可玩 Demo</title>
+  <style>
+    :root {
+      --bg: #140c10;
+      --card: rgba(90, 18, 18, .55);
+      --line: rgba(212, 175, 55, .45);
+      --gold: #d4af37;
+      --text: #f5e6c8;
+      --muted: rgba(245, 230, 200, .72);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(ellipse at 20% 0%, rgba(140, 30, 30, .45), transparent 50%),
+        radial-gradient(ellipse at 80% 100%, rgba(80, 40, 10, .35), transparent 45%),
+        var(--bg);
+      padding: 40px 20px 60px;
+    }
+    .wrap { max-width: 720px; margin: 0 auto; }
+    .back {
+      display: inline-block; margin-bottom: 22px; color: var(--gold);
+      text-decoration: none; font-size: 14px;
+    }
+    .back:hover { text-decoration: underline; }
+    h1 {
+      font-family: "Songti SC", "STSong", "SimSun", serif;
+      font-size: 32px; letter-spacing: .28em; color: var(--gold); margin-bottom: 10px;
+    }
+    .lead { color: var(--muted); font-size: 14px; line-height: 1.7; margin-bottom: 28px; max-width: 36em; }
+    .list { display: flex; flex-direction: column; gap: 14px; }
+    .card {
+      display: block; text-decoration: none; color: inherit;
+      background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+      padding: 18px 20px; transition: .15s background, .15s transform;
+    }
+    .card:hover { background: rgba(120, 28, 28, .7); transform: translateY(-1px); }
+    .card .ico { font-size: 28px; margin-bottom: 8px; }
+    .card h2 { font-size: 18px; letter-spacing: .12em; margin-bottom: 6px; }
+    .card p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+    .card .go { margin-top: 10px; font-size: 13px; color: var(--gold); }
+    footer { margin-top: 36px; font-size: 12px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="back" href="../index.htm">← 返回作品集</a>
+    <h1>许愿</h1>
+    <p class="lead">
+      「许愿式编程」练习区：一句话许愿，落地成可在浏览器里直接玩的单页 Demo。
+    </p>
+    <div class="list">
+      <a class="card" href="故宫漫游/index.html">
+        <div class="ico">🏯</div>
+        <h2>紫禁城漫游</h2>
+        <p>Three.js 中轴十组宫殿 + 金水桥、飞鸟飘旗、宫城小地图。WASD 第一人称，也可一键自动巡游。</p>
+        <div class="go">打开体验 →</div>
+      </a>
+      <a class="card" href="霓虹赛车/index.html">
+        <div class="ico">🏎️</div>
+        <h2>NEON DRIFT · 霓虹环道</h2>
+        <p>霓虹夜景环形赛道、漂移与撞墙减速、圈速 HUD 与小地图。方向键 / WASD + 空格漂移。</p>
+        <div class="go">打开体验 →</div>
+      </a>
+    </div>
+    <footer>路径：许愿/ · 与娱乐类游戏并列的独立分类</footer>
+  </div>
+</body>
+</html>

@@ -30,6 +30,8 @@
 | 🐍 贪吃蛇 | [体验](娱乐类/games/snake/index.html) | setInterval 游戏循环、碰撞检测、键盘+触屏滑动 |
 | 🐸 青蛙过河 | [体验](娱乐类/games/frog/index.html) | 经典换位谜题、合法跳步规则判定、步数统计、可重置状态 |
 | 📹 屏幕录制 | [体验](工具类/tools/luping.html) | MediaRecorder/getDisplayMedia，纯前端录屏与 WebM 下载 |
+| 🏯 紫禁城漫游 | [体验](许愿/故宫漫游/index.html) | Three.js 中轴宫殿群、飞鸟飘旗、小地图、第一人称 / 自动巡游 |
+| 🏎️ 霓虹环道 | [体验](许愿/霓虹赛车/index.html) | 霓虹环形赛道、漂移/撞墙减速、圈速 HUD、三圈完赛 |
 
 ## 📸 作品截图
 
@@ -46,6 +48,10 @@
 ```
 html5/
 ├── index.htm                 # 作品集首页（卡片式 + 树状浏览双视图）
+├── 许愿/                      # 「许愿式编程」可玩 Demo
+│   ├── index.html             # 许愿目录
+│   ├── 故宫漫游/              # Three.js 紫禁城漫游
+│   └── 霓虹赛车/              # Three.js 霓虹环道竞速
 ├── 工具类/                    # 录屏、天气、地点推荐
 │   └── tools/
 │       ├── luping.html        # MediaRecorder 屏幕录制
