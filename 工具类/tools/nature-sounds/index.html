@@ -178,24 +178,14 @@ function formatHeat(n){
 }
 function maxActive(){ return state.playMode==='mix' ? 3 : 1 }
 
-async function unlockAudio(){
+function unlockAudio(){
   if(state.unlocked) return
   try{
     const Ctx = window.AudioContext || window.webkitAudioContext
     if(Ctx){
-      const ctx = new Ctx()
-      if(ctx.state==='suspended') await ctx.resume()
-      const buf = ctx.createBuffer(1,1,22050)
-      const src = ctx.createBufferSource()
-      src.buffer = buf
-      src.connect(ctx.destination)
-      src.start(0)
+      if(!state.audioCtx) state.audioCtx = new Ctx()
+      if(state.audioCtx.state==='suspended') state.audioCtx.resume()
     }
-    // silent HTMLAudio unlock
-    const a = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=')
-    a.volume = 0.01
-    await a.play().catch(()=>{})
-    a.pause()
     state.unlocked = true
   }catch(e){}
 }
@@ -228,11 +218,10 @@ function ensureAudio(id){
   if(state.audioMap[id]) return state.audioMap[id]
   const s = state.sounds.find(x=>x.id===id)
   if(!s) return null
-  const a = new Audio()
+  const a = new Audio(s.url)
   a.preload = 'auto'
   a.loop = true
-  a.crossOrigin = 'anonymous'
-  a.src = s.url
+  // 不要设 crossOrigin：COS 未放行当前域时会导致第一次播失败
   const vol = state.volumeMap[id]!==undefined ? state.volumeMap[id] : 0.7
   a.volume = Math.min(1, vol * state.masterVolume)
   a.addEventListener('error', ()=> toast('加载失败：'+(s.name||id)))
@@ -276,8 +265,9 @@ function stopAll(){
   ;[...state.activeSet].forEach(stopId)
   paintList(); paintTip()
 }
-async function toggleSound(id){
-  await unlockAudio()
+function toggleSound(id){
+  // 必须在同一次点击手势里同步调 play()，中间不能 await，否则浏览器会拦
+  unlockAudio()
   if(state.activeSet.has(id)){
     stopId(id); paintList(); paintTip(); return
   }
@@ -288,27 +278,19 @@ async function toggleSound(id){
   const a = ensureAudio(id)
   if(!a) return
   applyVol(id)
-  try{
-    if(a.readyState < 2){
-      await new Promise((resolve,reject)=>{
-        const ok=()=>{ cleanup(); resolve() }
-        const bad=()=>{ cleanup(); reject(new Error('load')) }
-        const cleanup=()=>{ a.removeEventListener('canplay',ok); a.removeEventListener('error',bad) }
-        a.addEventListener('canplay',ok,{once:true})
-        a.addEventListener('error',bad,{once:true})
-        a.load()
-        setTimeout(()=>{ cleanup(); resolve() }, 2500)
-      })
-    }
-    await a.play()
-  }catch(e){
-    toast('请再点一次播放')
-    return
-  }
+  const p = a.play()
   state.activeSet.add(id)
   updateMediaSession(state.sounds.find(x=>x.id===id))
-  hitPlay(id)
   paintList(); paintTip()
+  hitPlay(id)
+  if(p && typeof p.then==='function'){
+    p.catch(()=>{
+      // 偶发未缓冲完：等 canplay 后再播一次，不再弹「浏览器限制」
+      const retry = ()=>{ a.play().catch(()=>{}) }
+      a.addEventListener('canplay', retry, {once:true})
+      setTimeout(retry, 400)
+    })
+  }
 }
 function setMode(mode){
   if(mode!=='bg' && mode!=='mix') return
@@ -417,9 +399,14 @@ function setTimer(minutes){
 
 function bindUi(){
   document.querySelectorAll('.mode-pill').forEach(el=>{
-    el.addEventListener('click', async ()=>{ await unlockAudio(); setMode(el.dataset.mode) })
+    el.addEventListener('click', ()=>{ unlockAudio(); setMode(el.dataset.mode) })
   })
   const root = document.getElementById('listRoot')
+  // 按下时就开始拉音频，抬起点击时已有缓冲
+  root.addEventListener('pointerdown', e=>{
+    const card = e.target.closest('.sound-card')
+    if(card) ensureAudio(card.dataset.id)
+  }, {passive:true})
   root.addEventListener('click', e=>{
     const head = e.target.closest('.acc-head')
     if(head){
@@ -480,6 +467,8 @@ async function boot(){
     if(!state.sounds.length) throw new Error('曲库为空')
     document.title = meta.app_name || '青蛙冥想'
     paintTip(); paintList()
+    // 预热前几条，减少首点延迟（不自动播）
+    state.sounds.slice(0, FIRST_N).forEach(s=> ensureAudio(s.id))
   }catch(e){
     document.getElementById('listRoot').innerHTML =
       `<div class="error">曲库加载失败：${escapeHtml(e.message||e)}<br>可微信搜「青蛙冥想」。</div>`
